@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.ratantatai.api.config.RazorpayProperties;
-import jakarta.validation.Valid;
+import java.util.HashMap;
 import java.util.Map;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -13,15 +13,17 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.validation.Valid;
+
 @Validated
 @RestController
-public class PaymentController {
+public class ApiPaymentController {
 
     private final RazorpayOrderClient razorpayOrderClient;
     private final RazorpayProperties razorpayProperties;
     private final ObjectMapper objectMapper;
 
-    public PaymentController(
+    public ApiPaymentController(
             RazorpayOrderClient razorpayOrderClient,
             RazorpayProperties razorpayProperties,
             ObjectMapper objectMapper) {
@@ -32,7 +34,10 @@ public class PaymentController {
 
     @GetMapping("/api/health")
     public Map<String, String> health() {
-        return Map.of("status", "ok", "service", "ratantatai-insurance-api");
+        Map<String, String> map = new HashMap<>();
+        map.put("status", "ok");
+        map.put("service", "ratantatai-insurance-api");
+        return map;
     }
 
     /**

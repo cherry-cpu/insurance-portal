@@ -30,6 +30,6 @@ public class RazorpayProperties {
     }
 
     public boolean isConfigured() {
-        return keyId != null && !keyId.isBlank() && keySecret != null && !keySecret.isBlank();
+        return keyId != null && !keyId.isEmpty() && keySecret != null && !keySecret.isEmpty();
     }
 }

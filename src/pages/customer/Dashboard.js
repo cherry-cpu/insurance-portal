@@ -1,27 +1,65 @@
 import { Link } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import PageShell from "../../components/PageShell";
-
-const stats = [
-    { label: "Active Policies", value: "2", icon: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z", color: "from-blue-500 to-blue-600", bg: "bg-blue-50", text: "text-blue-600" },
-    { label: "Claims Approved", value: "1", icon: "M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z", color: "from-emerald-500 to-emerald-600", bg: "bg-emerald-50", text: "text-emerald-600" },
-    { label: "Pending Claims", value: "1", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z", color: "from-amber-500 to-amber-600", bg: "bg-amber-50", text: "text-amber-600" },
-    { label: "Total Coverage", value: "₹8L", icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z", color: "from-violet-500 to-violet-600", bg: "bg-violet-50", text: "text-violet-600" },
-];
-
-const policies = [
-    { id: "POL-1001", name: "Health Shield", type: "Health", premium: "₹12,000/yr", coverage: "₹5,00,000", status: "Active", nextDue: "15 May 2026" },
-    { id: "POL-1002", name: "Vehicle Guard", type: "Vehicle", premium: "₹8,500/yr", coverage: "₹3,00,000", status: "Active", nextDue: "22 Jun 2026" },
-];
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 const typeIcons = {
     Health: "❤️",
-    Vehicle: "🚗",
-    Life: "🛡️",
-    Home: "🏠",
+    // Add other types as needed
 };
 
 export default function Dashboard() {
+    const [policies, setPolicies] = useState([]);
+    const [stats, setStats] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        async function fetchStatsAndPolicies() {
+            try {
+                const [statsResponse, policiesResponse] = await Promise.all([
+                    axios.get("http://localhost:8080/api/stats"), // Replace with your stats API endpoint
+                    axios.get("http://localhost:8080/api/policies"), // Replace with your policies API endpoint
+                ]);
+
+                // Ensure stats is an array
+                const statsData = Array.isArray(statsResponse.data) ? statsResponse.data : Object.entries(statsResponse.data).map(([key, value]) => ({ label: key, value }));
+
+                setStats(statsData);
+                setPolicies(policiesResponse.data);
+            } catch (err) {
+                setError("Failed to fetch data. Please try again later.");
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        fetchStatsAndPolicies();
+    }, []);
+
+    if (loading) {
+        return (
+            <PageShell>
+                <Navbar />
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 lg:py-10">
+                    <p className="text-center text-slate-500">Loading...</p>
+                </div>
+            </PageShell>
+        );
+    }
+
+    if (error) {
+        return (
+            <PageShell>
+                <Navbar />
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 lg:py-10">
+                    <p className="text-center text-red-500">{error}</p>
+                </div>
+            </PageShell>
+        );
+    }
+
     return (
         <PageShell>
             <Navbar />
@@ -131,7 +169,7 @@ export default function Dashboard() {
                                                 <span className="text-lg">{typeIcons[policy.type]}</span>
                                                 <div>
                                                     <p className="text-sm font-semibold text-slate-900">{policy.name}</p>
-                                                    <p className="text-xs text-slate-400">#{policy.id}</p>
+                                                    <p className="text-xs text-slate-400">#{policy.policyNumber}</p>
                                                 </div>
                                             </div>
                                         </td>
@@ -142,9 +180,9 @@ export default function Dashboard() {
                                         </td>
                                         <td className="px-6 py-4 text-sm font-semibold tabular-nums text-slate-800">{policy.premium}</td>
                                         <td className="px-6 py-4 text-sm tabular-nums text-slate-600">{policy.coverage}</td>
-                                        <td className="px-6 py-4 text-sm text-slate-500">{policy.nextDue}</td>
+                                        <td className="px-6 py-4 text-sm text-slate-500">{policy.endDate}</td>
                                         <td className="px-6 py-4">
-                                            <span className="badge badge-active">● Active</span>
+                                            <span className="badge badge-active">● {policy.status}</span>
                                         </td>
                                     </tr>
                                 ))}

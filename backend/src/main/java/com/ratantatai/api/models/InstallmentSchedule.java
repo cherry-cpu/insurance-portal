@@ -1,6 +1,5 @@
 package com.ratantatai.api.models;
-
-import jakarta.persistence.*;
+import javax.persistence.*;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
@@ -8,7 +7,8 @@ import java.time.OffsetDateTime;
 @Table(name = "installment_schedule")
 public class InstallmentSchedule {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO,generator = "SEQ_HOSPITAL_MASTER")
+    @SequenceGenerator(name ="SEQ_HOSPITAL_MASTER",sequenceName = "SEQ_INSTALLEMNT")
     private Long id;
 
     @Column(name = "policy_contract_id")

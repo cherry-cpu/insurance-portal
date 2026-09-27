@@ -73,16 +73,16 @@ export default function ReportsMgmtView() {
                         <h3 className="text-lg font-bold text-slate-900 mb-6">Revenue by Product Line</h3>
                         <div className="space-y-6">
                             <div>
-                                <div className="flex justify-between text-sm font-bold mb-2"><span className="text-slate-700">Health Premium</span><span className="text-blue-600">$2.1M</span></div>
-                                <div className="w-full bg-slate-100 rounded-full h-2"><div className="bg-blue-600 h-2 rounded-full" style={{ width: '50%' }}></div></div>
+                                <div className="flex justify-between text-sm font-bold mb-2"><span className="text-slate-700">Health Premium</span><span className="text-blue-600">$2.8M</span></div>
+                                <div className="w-full bg-slate-100 rounded-full h-2"><div className="bg-blue-600 h-2 rounded-full" style={{ width: '100%' }}></div></div>
                             </div>
                             <div>
-                                <div className="flex justify-between text-sm font-bold mb-2"><span className="text-slate-700">Auto Protect</span><span className="text-amber-500">$1.5M</span></div>
-                                <div className="w-full bg-slate-100 rounded-full h-2"><div className="bg-amber-500 h-2 rounded-full" style={{ width: '35%' }}></div></div>
+                                <div className="flex justify-between text-sm font-bold mb-2"><span className="text-slate-700">Wellness Services</span><span className="text-amber-500">$750K</span></div>
+                                <div className="w-full bg-slate-100 rounded-full h-2"><div className="bg-amber-500 h-2 rounded-full" style={{ width: '25%' }}></div></div>
                             </div>
                             <div>
-                                <div className="flex justify-between text-sm font-bold mb-2"><span className="text-slate-700">Life Term</span><span className="text-purple-600">$600K</span></div>
-                                <div className="w-full bg-slate-100 rounded-full h-2"><div className="bg-purple-600 h-2 rounded-full" style={{ width: '15%' }}></div></div>
+                                <div className="flex justify-between text-sm font-bold mb-2"><span className="text-slate-700">Member Services</span><span className="text-purple-600">$320K</span></div>
+                                <div className="w-full bg-slate-100 rounded-full h-2"><div className="bg-purple-600 h-2 rounded-full" style={{ width: '12%' }}></div></div>
                             </div>
                         </div>
                     </div>
@@ -98,7 +98,7 @@ export default function ReportsMgmtView() {
                                 <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 bg-green-100 text-green-700 rounded-full flex items-center justify-center font-bold">#1</div>
-                                        <div><p className="font-bold text-slate-900">David G. (AGT-101)</p><p className="text-xs text-slate-500">Health & Auto</p></div>
+                                        <div><p className="font-bold text-slate-900">David G. (AGT-101)</p><p className="text-xs text-slate-500">Health Specialist</p></div>
                                     </div>
                                     <div className="text-right">
                                         <p className="font-bold text-green-600">142 Policies</p>
@@ -108,7 +108,7 @@ export default function ReportsMgmtView() {
                                 <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 bg-slate-200 text-slate-600 rounded-full flex items-center justify-center font-bold">#2</div>
-                                        <div><p className="font-bold text-slate-900">Sarah M. (AGT-108)</p><p className="text-xs text-slate-500">Life Term Special</p></div>
+                                        <div><p className="font-bold text-slate-900">Sarah M. (AGT-108)</p><p className="text-xs text-slate-500">Health Wellness Lead</p></div>
                                     </div>
                                     <div className="text-right">
                                         <p className="font-bold text-slate-700">98 Policies</p>

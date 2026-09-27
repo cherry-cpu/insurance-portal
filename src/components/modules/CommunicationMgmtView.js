@@ -13,7 +13,7 @@ export default function CommunicationMgmtView() {
     ]);
 
     const [simulatedHistory, setSimulatedHistory] = useState([
-        { channel: 'WHATSAPP', target: 'Inbound', text: 'I need help filing a claim for my vehicle.', time: '10:42 AM' },
+        { channel: 'WHATSAPP', target: 'Inbound', text: 'I need help filing a claim for my health policy.', time: '10:42 AM' },
         { channel: 'EMAIL', target: 'Outbound', text: 'Your policy document #POL-112 has been successfully issued. Please find the E-certificate attached.', time: 'Yesterday, 04:12 PM' },
         { channel: 'CALL', target: 'Outbound', text: 'Call connected securely. Agent noted customer requested change of address. Duration: 04m 12s.', time: 'Mon, 11:00 AM' }
     ]);

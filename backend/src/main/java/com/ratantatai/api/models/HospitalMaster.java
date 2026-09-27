@@ -1,12 +1,13 @@
 package com.ratantatai.api.models;
 
-import jakarta.persistence.*;
+import javax.persistence.*;
 
 @Entity
 @Table(name = "hospital_master")
 public class HospitalMaster {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO,generator = "SEQ_HOSPITAL_MASTER")
+    @SequenceGenerator(name ="SEQ_HOSPITAL_MASTER",sequenceName = "SEQ_HOSPITAL_MASTER")
     private Long id;
 
     @Column(nullable = false)
@@ -17,6 +18,9 @@ public class HospitalMaster {
     private String state;
     private String tier = "TIER_1";
     private String networkType = "NON_NETWORK";
+    private String specializations;
+    private String accreditation;
+    private String facilities;
     private Long standardRoomRentLimit;
     private Long premiumRoomRentLimit;
 
@@ -34,6 +38,12 @@ public class HospitalMaster {
     public void setTier(String tier) { this.tier = tier; }
     public String getNetworkType() { return networkType; }
     public void setNetworkType(String networkType) { this.networkType = networkType; }
+    public String getSpecializations() { return specializations; }
+    public void setSpecializations(String specializations) { this.specializations = specializations; }
+    public String getAccreditation() { return accreditation; }
+    public void setAccreditation(String accreditation) { this.accreditation = accreditation; }
+    public String getFacilities() { return facilities; }
+    public void setFacilities(String facilities) { this.facilities = facilities; }
     public Long getStandardRoomRentLimit() { return standardRoomRentLimit; }
     public void setStandardRoomRentLimit(Long standardRoomRentLimit) { this.standardRoomRentLimit = standardRoomRentLimit; }
     public Long getPremiumRoomRentLimit() { return premiumRoomRentLimit; }

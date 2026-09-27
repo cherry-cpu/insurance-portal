@@ -2,6 +2,10 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Project Overview
+
+A dedicated project architecture and requirements document is available in `PROJECT_OVERVIEW.md`.
+
 ## Available Scripts
 
 In the project directory, you can run:

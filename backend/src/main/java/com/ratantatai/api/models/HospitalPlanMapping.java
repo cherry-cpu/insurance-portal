@@ -1,12 +1,12 @@
 package com.ratantatai.api.models;
 
-import jakarta.persistence.*;
-
+import javax.persistence.*;
 @Entity
 @Table(name = "hospital_plan_mapping")
 public class HospitalPlanMapping {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO,generator = "SEQ_HOSPITAL_MASTER")
+    @SequenceGenerator(name ="SEQ_HOSPITAL_MASTER",sequenceName = "SEQ_HOSPITAL_MASTER")
     private Long id;
 
     @Column(name = "hospital_id", nullable = false)

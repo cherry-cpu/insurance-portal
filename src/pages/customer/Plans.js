@@ -4,32 +4,40 @@ import PageShell from "../../components/PageShell";
 
 const plans = [
     {
-        id: 1, name: "Health Shield", type: "Health", emoji: "❤️",
-        premium: "₹12,000", period: "year", coverage: "₹5,00,000",
-        popular: false,
+        id: 1,
+        name: "Health Shield",
+        type: "Health",
+        emoji: "❤️",
+        premium: "₹12,000",
+        period: "year",
+        coverage: "₹5,00,000",
+        popular: true,
         features: ["Hospitalization up to ₹5L", "Cashless at 5000+ hospitals", "Pre & post hospitalization", "Day care procedures", "No room rent capping"],
         gradient: "from-blue-500 to-blue-600",
     },
     {
-        id: 2, name: "Vehicle Guard", type: "Vehicle", emoji: "🚗",
-        premium: "₹8,500", period: "year", coverage: "₹3,00,000",
+        id: 2,
+        name: "Health Essentials",
+        type: "Health",
+        emoji: "🩺",
+        premium: "₹9,500",
+        period: "year",
+        coverage: "₹3,00,000",
         popular: false,
-        features: ["Third-party liability cover", "Own damage protection", "Personal accident cover", "24/7 roadside assistance", "Zero depreciation add-on"],
-        gradient: "from-violet-500 to-violet-600",
+        features: ["Broad OPD cover", "Pre-existing condition waiting period", "Maternity add-on available", "Cashless pre-authorization", "Day care procedure support"],
+        gradient: "from-teal-500 to-cyan-600",
     },
     {
-        id: 3, name: "Life Secure Plus", type: "Life", emoji: "🛡️",
-        premium: "₹15,000", period: "year", coverage: "₹25,00,000",
-        popular: true,
-        features: ["₹25L life coverage", "Maturity benefit at 60", "Tax savings under 80C", "Accidental death benefit", "Loan facility available", "Premium waiver benefit"],
-        gradient: "from-emerald-500 to-teal-600",
-    },
-    {
-        id: 4, name: "Home Protect", type: "Home", emoji: "🏠",
-        premium: "₹6,000", period: "year", coverage: "₹10,00,000",
+        id: 3,
+        name: "Family Care Plus",
+        type: "Health",
+        emoji: "👨‍👩‍👧‍👦",
+        premium: "₹18,000",
+        period: "year",
+        coverage: "₹10,00,000",
         popular: false,
-        features: ["Fire & natural disaster", "Burglary & theft cover", "Structural damage", "Temporary accommodation", "Personal liability cover"],
-        gradient: "from-amber-500 to-orange-500",
+        features: ["Family floater cover", "Maternity support", "Wellness benefits", "Cashless illness coverage", "Health check-up vouchers"],
+        gradient: "from-emerald-500 to-green-600",
     },
 ];
 
@@ -46,7 +54,7 @@ export default function Plans() {
                     </span>
                     <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Choose coverage that fits</h1>
                     <p className="mx-auto mt-3 max-w-lg text-slate-600">
-                        Compare benefits and pricing across health, motor, life, and home — built for clarity.
+                        Compare health insurance plans and coverage options — built for clarity.
                     </p>
                 </div>
 

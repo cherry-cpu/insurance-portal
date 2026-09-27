@@ -9,8 +9,7 @@ export default function CustomerPortalView() {
 
     // Customer specific mock data
     const myPolicies = [
-        { id: "POL-99210", product: "Comprehensive Health", premium: "$120/mo", nextDueDate: "2026-05-15", status: "Active" },
-        { id: "POL-11883", product: "Auto Protect Premium", premium: "$85/mo", nextDueDate: "2026-04-20", status: "Active" }
+        { id: "POL-99210", product: "Comprehensive Health", premium: "$120/mo", nextDueDate: "2026-05-15", status: "Active" }
     ];
 
     const myClaims = [
@@ -19,7 +18,6 @@ export default function CustomerPortalView() {
 
     const myDocuments = [
         { id: "DOC-9912A", title: "Health Policy Certificate (POL-99210)", type: "E-CERT", date: "2026-01-15" },
-        { id: "DOC-8812B", title: "Auto Policy Certificate (POL-11883)", type: "E-CERT", date: "2025-11-20" },
         { id: "DOC-112XZ", title: "Premium Tax Receipt (2025)", type: "TAX_STATEMENT", date: "2026-02-01" },
     ];
 

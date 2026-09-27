@@ -78,6 +78,14 @@ export async function createUnderwritingCase(payload) {
     return apiPost("/api/underwriting/submit", payload);
 }
 
+export async function createPolicyContract(payload) {
+    return apiPost("/api/policies", payload);
+}
+
+export async function getPolicies() {
+    return apiGet("/api/policies");
+}
+
 export async function getUnderwritingCases() {
     return apiGet("/api/underwriting");
 }
@@ -125,6 +133,36 @@ export async function settleClaim(claimNumber, amountPaise, payoutReference) {
     });
 }
 
+export async function processClaimSettlement(claimId, amount) {
+    return apiPost(`/api/claims/${encodeURIComponent(claimId)}/settle`, {
+        amount,
+    });
+}
+
+export async function getCustomerDetails(policyId) {
+    return apiGet(`/api/customers/policy/${encodeURIComponent(policyId)}`);
+}
+
+export async function verifyClaimDocuments(claimId, documentId, status) {
+    return apiPost(`/api/claims/${encodeURIComponent(claimId)}/documents/${encodeURIComponent(documentId)}/verify`, { status });
+}
+
+export async function requestMoreInfo(claimId, info) {
+    return apiPost(`/api/claims/${encodeURIComponent(claimId)}/request-info`, { info });
+}
+
+export async function saveClaimStatement(claimId, statement) {
+    return apiPost(`/api/claims/${encodeURIComponent(claimId)}/statement`, { statement });
+}
+
+export async function rejectClaim(claimId, reason) {
+    return apiPost(`/api/claims/${encodeURIComponent(claimId)}/reject`, { reason });
+}
+
+export async function getClaimHistory(claimId) {
+    return apiGet(`/api/claims/${encodeURIComponent(claimId)}/history`);
+}
+
 export async function doctorReviewClaim(claimNumber, review, note) {
     return apiPost(`/api/claims/${encodeURIComponent(claimNumber)}/doctor-review`, {
         review,
@@ -140,8 +178,16 @@ export async function getComplianceAuditLogs() {
     return apiGet("/api/compliance/audit-logs");
 }
 
-export async function generateIRDAIReport(payload) {
-    return apiPost("/api/compliance/reports/generate", payload);
+export async function getProducts() {
+    return apiGet("/api/products");
+}
+
+export async function getProductsByCategory(category) {
+    return apiGet(`/api/products/category/${encodeURIComponent(category)}`);
+}
+
+export async function getProduct(id) {
+    return apiGet(`/api/products/${encodeURIComponent(id)}`);
 }
 
 export async function submitRegulatoryReport(reportId, payload) {
@@ -173,4 +219,71 @@ export async function fileGstReturn(payload) {
     return apiPost("/api/finance/gst/filing", payload);
 }
 
-export { BASE as API_BASE_URL };
+export async function verifyAadhar(aadhar) {
+    return apiPost("/api/policies/verify-aadhar", { aadhar });
+}
+
+export async function getPremiumOptions(category, coverage) {
+    const params = new URLSearchParams({ category });
+    if (coverage) params.append('coverage', coverage);
+    return apiGet(`/api/policies/premium-options?${params}`);
+}
+
+export async function createComprehensivePolicy(policyData) {
+    return apiPost("/api/policies/create", policyData);
+}
+
+export async function initiateCCavenuePayment(paymentData) {
+    return apiPost("/api/payments/ccavenue/initiate", paymentData);
+}
+
+export async function handleCCavenueResponse(responseData) {
+    return apiPost("/api/payments/ccavenue/response", responseData);
+}
+
+export async function getPendingKycPolicies() {
+    return apiGet("/api/digital-kyc/pending-policies");
+}
+
+export async function getPolicyDetailsForKyc(policyNumber) {
+    return apiGet(`/api/digital-kyc/policy-details/${encodeURIComponent(policyNumber)}`);
+}
+
+export async function verifyDigitalKyc(policyNumber, digitalHealthData, verifiedBy) {
+    return apiPost(`/api/digital-kyc/verify/${encodeURIComponent(policyNumber)}`, {
+        digitalHealth: digitalHealthData,
+        verifiedBy: verifiedBy
+    });
+}
+
+export async function updatePolicy(policyNumber, updates) {
+    return apiPost(`/api/policies/${encodeURIComponent(policyNumber)}`, updates, { method: 'PUT' });
+}
+
+export async function renewPolicy(policyNumber, renewalData) {
+    return apiPost(`/api/policies/${encodeURIComponent(policyNumber)}/renew`, renewalData);
+}
+
+export async function generateCertificate(policyNumber) {
+    return apiGet(`/api/policies/${encodeURIComponent(policyNumber)}/certificate`);
+}
+
+export async function downloadCertificate(policyNumber) {
+    const response = await fetch(`${BASE}/api/policies/${encodeURIComponent(policyNumber)}/certificate/download`);
+    if (!response.ok) throw new Error('Failed to download certificate');
+    return response.blob();
+}
+
+export async function getAuditLogs(entityType, entityId) {
+    const params = new URLSearchParams({ entityType });
+    if (entityId) params.append('entityId', entityId);
+    return apiGet(`/api/audit/logs?${params}`);
+}
+
+export async function getStats() {
+    return apiGet("/api/stats");
+}
+
+export async function getComplianceTasks(policyId) {
+    return apiGet(`/api/compliance/tasks/${encodeURIComponent(policyId)}`);
+}

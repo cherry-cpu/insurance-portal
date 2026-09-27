@@ -1,6 +1,6 @@
 package com.ratantatai.api.models;
 
-import jakarta.persistence.*;
+import javax.persistence.*;
 import java.time.OffsetDateTime;
 import java.time.LocalDate;
 
@@ -8,7 +8,8 @@ import java.time.LocalDate;
 @Table(name = "ledger_entry")
 public class FinanceLedgerEntry {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO,generator = "SEQ_HOSPITAL_MASTER")
+    @SequenceGenerator(name ="SEQ_HOSPITAL_MASTER",sequenceName = "SEQ_HOSPITAL_MASTER")
     private Long id;
 
     @Column(name = "policy_contract_id")

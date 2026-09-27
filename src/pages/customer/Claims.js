@@ -1,7 +1,7 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Navbar from "../../components/Navbar";
 import PageShell from "../../components/PageShell";
-import { getClaims, submitClaim } from "../../api/client";
+import { getClaims, getPolicies, submitClaim } from "../../api/client";
 
 const statusBadge = {
     APPROVED: "badge-approved",
@@ -27,14 +27,25 @@ function formatAmount(value) {
 }
 
 export default function Claims() {
-    const [form, setForm] = useState({ policyId: "", description: "", amount: "" });
+    const [form, setForm] = useState({ policyId: "", claimType: "REIMBURSEMENT", hospitalName: "", serviceDate: "", diagnosis: "", description: "", amount: "" });
     const [submitted, setSubmitted] = useState(false);
     const [claims, setClaims] = useState([]);
+    const [policies, setPolicies] = useState([]);
     const [message, setMessage] = useState("");
 
     useEffect(() => {
         loadClaims();
+        loadPolicies();
     }, []);
+
+    const loadPolicies = async () => {
+        try {
+            const result = await getPolicies();
+            setPolicies(Array.isArray(result) ? result : []);
+        } catch (error) {
+            console.error("Failed to load policies", error);
+        }
+    };
 
     const loadClaims = async () => {
         try {
@@ -53,11 +64,15 @@ export default function Claims() {
         try {
             await submitClaim({
                 policyNumber: form.policyId.trim(),
+                claimType: form.claimType,
+                hospitalRef: form.hospitalName.trim(),
                 amountClaimedPaise: Math.round(Number(form.amount) * 100),
+                diagnosis: form.diagnosis.trim(),
+                admissionDate: form.serviceDate,
                 detailsJson: JSON.stringify({ description: form.description }),
             });
             setSubmitted(true);
-            setForm({ policyId: "", description: "", amount: "" });
+            setForm({ policyId: "", claimType: "REIMBURSEMENT", hospitalName: "", serviceDate: "", diagnosis: "", description: "", amount: "" });
             setMessage("Claim submitted successfully.");
             await loadClaims();
         } catch (error) {
@@ -99,9 +114,57 @@ export default function Claims() {
                                     required
                                 >
                                     <option value="">Select a policy</option>
-                                    <option value="POL-1001">#POL-1001 — Health Shield</option>
-                                    <option value="POL-1002">#POL-1002 — Vehicle Guard</option>
+                                    {policies.map(p => (
+                                        <option key={p.policyNumber} value={p.policyNumber}>
+                                            #{p.policyNumber} — {p.status}
+                                        </option>
+                                    ))}
                                 </select>
+                            </div>
+
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label className="mb-2 block text-sm font-medium text-slate-700">Claim type</label>
+                                    <select
+                                        value={form.claimType}
+                                        onChange={(e) => setForm({ ...form, claimType: e.target.value })}
+                                        className="input-premium cursor-pointer"
+                                        required
+                                    >
+                                        <option value="REIMBURSEMENT">Reimbursement</option>
+                                        <option value="CASHLESS">Cashless</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="mb-2 block text-sm font-medium text-slate-700">Hospital / provider</label>
+                                    <input
+                                        className="input-premium"
+                                        value={form.hospitalName}
+                                        onChange={(e) => setForm({ ...form, hospitalName: e.target.value })}
+                                        placeholder="Hospital name or ID"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label className="mb-2 block text-sm font-medium text-slate-700">Service / admission date</label>
+                                    <input
+                                        type="date"
+                                        className="input-premium"
+                                        value={form.serviceDate}
+                                        onChange={(e) => setForm({ ...form, serviceDate: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="mb-2 block text-sm font-medium text-slate-700">Diagnosis</label>
+                                    <input
+                                        className="input-premium"
+                                        value={form.diagnosis}
+                                        onChange={(e) => setForm({ ...form, diagnosis: e.target.value })}
+                                        placeholder="Primary diagnosis or treatment"
+                                    />
+                                </div>
                             </div>
 
                             <div>
@@ -163,6 +226,7 @@ export default function Claims() {
                                             <div className="mt-3 flex flex-wrap gap-2 text-sm">
                                                 <span className="font-semibold">{formatAmount(claim.amountClaimedPaise)}</span>
                                                 <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{claim.status}</span>
+                                                {claim.claimType && <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-700">{claim.claimType}</span>}
                                                 {claim.preAuthStatus && (
                                                     <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800">
                                                         Pre-auth {claim.preAuthStatus}
@@ -171,6 +235,9 @@ export default function Claims() {
                                             </div>
 
                                             <p className="mt-3 text-sm text-slate-600">
+                                                {claim.diagnosis ? <span className="font-semibold">Diagnosis:</span> : null} {claim.diagnosis}
+                                            </p>
+                                            <p className="mt-2 text-sm text-slate-600">
                                                 {claim.detailsJson ? JSON.parse(claim.detailsJson).description : claim.description}
                                             </p>
                                         </div>

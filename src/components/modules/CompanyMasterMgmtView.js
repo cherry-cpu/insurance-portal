@@ -15,14 +15,14 @@ export default function CompanyMasterMgmtView() {
         details: { email: 'b2b-support@hdfcergo.partner.com', phone: '+91-8029102919' },
         products: [
             { code: "HLTH-COMP", name: "Comprehensive Family Health", cat: "HEALTH", premium: "$120/mo" },
-            { code: "AUTO-COMP", name: "Comprehensive Auto Guard", cat: "AUTO", premium: "$45/mo" }
+            { code: "FAM-CARE", name: "Family Care Plus", cat: "HEALTH", premium: "$140/mo" }
         ],
         agreements: [
             { type: "Tier-1 Brokerage Commission", valid: "2028-12-31" }
         ],
         rules: [
             { region: "PAN-INDIA", desc: "Network hospitals restricted strictly to Tier-1 listed providers for completely cashless claims." },
-            { region: "STATE-MH", desc: "Exclusive auto-repair cashless tie-up with verified and approved brand-mechanics." }
+            { region: "STATE-MH", desc: "Preferred hospital referral network with verified cashless care pathways." }
         ]
     };
 

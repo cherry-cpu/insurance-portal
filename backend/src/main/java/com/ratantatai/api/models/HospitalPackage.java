@@ -1,13 +1,14 @@
 package com.ratantatai.api.models;
 
-import jakarta.persistence.*;
+import javax.persistence.*;
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "hospital_package")
 public class HospitalPackage {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO,generator = "SEQ_HOSPITAL_MASTER")
+    @SequenceGenerator(name ="SEQ_HOSPITAL_MASTER",sequenceName = "SEQ_HOSPITAL_MASTER")
     private Long id;
 
     @Column(name = "hospital_id", nullable = false)

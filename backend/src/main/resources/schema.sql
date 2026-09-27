@@ -12,6 +12,9 @@ CREATE TABLE app_user (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+INSERT INTO app_user (id, email, password_hash, full_name, phone, role) VALUES
+    (1, 'customer@ratantatai.com', 'demo-password', 'Demo Customer', '9000000000', 'CUSTOMER');
+
 CREATE TABLE address (
     id              BIGSERIAL PRIMARY KEY,
     user_id         BIGINT NOT NULL REFERENCES app_user (id) ON DELETE CASCADE,
@@ -34,6 +37,9 @@ CREATE TABLE insurance_company (
     status          VARCHAR(32) NOT NULL DEFAULT 'ACTIVE',
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+INSERT INTO insurance_company (id, name, registration_no, contact_email, contact_phone, status, created_at) VALUES
+    (1, 'Ratantatai Insurance', 'IRDA123456', 'support@ratantatai.com', '1800123456', 'ACTIVE', NOW());
 
 CREATE TABLE company_agreement (
     id                   BIGSERIAL PRIMARY KEY,
@@ -64,6 +70,15 @@ CREATE TABLE policy_product (
     active          BOOLEAN NOT NULL DEFAULT TRUE
 );
 
+INSERT INTO policy_product (id, company_id, code, name, category, sum_insured_paise, base_premium_paise, metadata_json, active) VALUES
+    (1, 1, 'health_basic', 'Health Basic', 'HEALTH', 10000000, 720000, '{"tier":"Starter","category":"individual"}', TRUE),
+    (2, 1, 'youth_shield', 'Youth Shield', 'HEALTH', 40000000, 720000, '{"tier":"Starter","category":"individual","minAge":"0-17","maxAge":"31-45"}', TRUE),
+    (3, 1, 'family_care', 'Family Care Plus', 'HEALTH', 75000000, 1180000, '{"tier":"Popular","category":"family","minAge":"0-17","maxAge":"61+"}', TRUE),
+    (4, 1, 'chronic_comfort', 'Chronic Comfort', 'HEALTH', 90000000, 1540000, '{"tier":"Chronic","category":"individual","minAge":"18-30","maxAge":"61+"}', TRUE),
+    (5, 1, 'gold_secure', 'Gold Secure Health', 'HEALTH', 120000000, 1980000, '{"tier":"Gold","category":"family","minAge":"18-30","maxAge":"61+"}', TRUE),
+    (6, 1, 'senior_elite', 'Senior Elite', 'HEALTH', 100000000, 2460000, '{"tier":"Senior","category":"senior","minAge":"46-60","maxAge":"61+"}', TRUE),
+    (7, 1, 'oncology_guard', 'Oncology Guard Rider+', 'HEALTH', 150000000, 2890000, '{"tier":"Specialist","category":"individual","minAge":"18-30","maxAge":"61+"}', TRUE);
+
 CREATE TABLE policy_contract (
     id              BIGSERIAL PRIMARY KEY,
     policy_number   VARCHAR(64) NOT NULL UNIQUE,
@@ -74,6 +89,8 @@ CREATE TABLE policy_contract (
     end_date        DATE,
     nominee_json    JSONB,
     health_json     JSONB,
+    address_json    JSONB,
+    documents_json  JSONB,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -280,3 +297,102 @@ CREATE TABLE hospital_contract (
     created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Table for General Policies
+CREATE TABLE general_policies (
+    id VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(255),
+    icon VARCHAR(10),
+    benefits TEXT,
+    sum_insured VARCHAR(50)
+);
+
+INSERT INTO general_policies (id, name, icon, benefits, sum_insured) VALUES
+('health', 'Health Insurance', '❤️', 'Cashless hospitals,Pre/post hospitalization,Day care procedures,No-claim bonus', '₹3L – ₹25L');
+
+-- Table for Health Plans Catalog
+CREATE TABLE health_plans (
+    id VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(255),
+    tier VARCHAR(50),
+    category VARCHAR(50),
+    summary TEXT,
+    base_premium INT,
+    coverage INT,
+    copay VARCHAR(50),
+    excluded_conditions TEXT,
+    min_age_bracket VARCHAR(50),
+    max_age_bracket VARCHAR(50)
+);
+
+INSERT INTO health_plans (id, name, tier, category, summary, base_premium, coverage, copay, excluded_conditions, min_age_bracket, max_age_bracket) VALUES
+('youth-shield', 'Youth Shield', 'Starter', 'individual', 'Ideal for young individuals with no or low chronic load.', 7200, 400000, '10% co-pay', 'cancer,cardiac,kidney', '0-17', '31-45');
+
+-- Table for Indian States
+CREATE TABLE indian_states (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255)
+);
+
+INSERT INTO indian_states (name) VALUES
+('Andhra Pradesh'),
+('Arunachal Pradesh'),
+('Assam'),
+('Bihar'),
+('Chhattisgarh'),
+('Goa'),
+('Gujarat'),
+('Haryana'),
+('Himachal Pradesh'),
+('Jharkhand'),
+('Karnataka'),
+('Kerala'),
+('Madhya Pradesh'),
+('Maharashtra'),
+('Manipur'),
+('Meghalaya'),
+('Mizoram'),
+('Nagaland'),
+('Odisha'),
+('Punjab'),
+('Rajasthan'),
+('Sikkim'),
+('Tamil Nadu'),
+('Telangana'),
+('Tripura'),
+('Uttar Pradesh'),
+('Uttarakhand'),
+('West Bengal'),
+('Andaman and Nicobar Islands'),
+('Chandigarh'),
+('Dadra and Nagar Haveli and Daman and Diu'),
+('Delhi'),
+('Jammu and Kashmir'),
+('Ladakh'),
+('Lakshadweep'),
+('Puducherry');
+
+-- Table for Platform Modules
+CREATE TABLE platform_modules (
+    id VARCHAR(50) PRIMARY KEY,
+    title VARCHAR(255),
+    description TEXT,
+    features TEXT
+);
+
+INSERT INTO platform_modules (id, title, description, features) VALUES
+('policy-mgmt', 'Policy Management', 'Create and manage insurance policies with premium, coverage, documents, status, and lifecycle updates.', 'Policy creation, endorsements, renewals, and cancellations|Premium, coverage, beneficiary, and document storage|Policy status tracking, updates, and audit history|Centralized master data for all insurance contracts'),
+('underwriting', 'Underwriting & Risk', 'Risk assessment, medical review, premium loading, and automated underwriting decisions.', 'Automated underwriting risk scoring and premium calculation|Medical / background check flags with review workflow|Approve, reject or load premium decisions using rule engine|Underwriting cases tracked with audit-ready status and notes');
+
+-- Table for Policy Terms
+CREATE TABLE policy_terms (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255),
+    body TEXT
+);
+
+INSERT INTO policy_terms (title, body) VALUES
+('1. Scope of cover', 'Hospitalization expenses for medically necessary treatment as defined in the policy schedule, subject to sum insured, co-payment, and sub-limits for specific procedures.'),
+('2. Waiting periods', 'Initial 30-day waiting period for illness (except accidents). Pre-existing diseases as declared: 24–48 months depending on plan. Specific illnesses may carry additional waiting periods as per IRDAI guidelines.'),
+('3. Exclusions', 'Cosmetic surgery (unless medically required), war, self-harm, undisclosed conditions at inception, experimental treatment, and items listed in the policy document are excluded.'),
+('4. Claims', 'Cashless at network hospitals subject to authorization. Reimbursement claims require original bills, discharge summary, prescriptions, and investigation reports within the stipulated time.'),
+('5. Free-look & renewal', '15-day free-look cancellation from receipt of policy document (terms apply). Renewal is guaranteed as per regulatory norms unless fraud or non-disclosure is established.');

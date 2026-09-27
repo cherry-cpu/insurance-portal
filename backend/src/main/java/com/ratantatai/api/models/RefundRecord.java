@@ -1,13 +1,13 @@
 package com.ratantatai.api.models;
-
-import jakarta.persistence.*;
+import javax.persistence.*;
 import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "refund_record")
 public class RefundRecord {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO,generator = "SEQ_HOSPITAL_MASTER")
+    @SequenceGenerator(name ="SEQ_HOSPITAL_MASTER",sequenceName = "SEQ_REFUND")
     private Long id;
 
     @Column(name = "payment_id")

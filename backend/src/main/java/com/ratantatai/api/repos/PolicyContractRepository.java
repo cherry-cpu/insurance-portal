@@ -10,4 +10,6 @@ import java.util.List;
 public interface PolicyContractRepository extends JpaRepository<PolicyContract, Long> {
     List<PolicyContract> findByUserId(Long userId);
     PolicyContract findByPolicyNumber(String policyNumber);
+    List<PolicyContract> findByDigitalKycStatus(String digitalKycStatus);
+    long countByStatus(String status);
 }

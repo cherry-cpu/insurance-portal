@@ -10,10 +10,10 @@ const stats = [
 
 const recentPolicies = [
     { id: "#POL-1048", customer: "Rahul Sharma", type: "Health", premium: "₹12,000", date: "2026-04-10" },
-    { id: "#POL-1047", customer: "Priya Patel", type: "Vehicle", premium: "₹8,500", date: "2026-04-09" },
-    { id: "#POL-1046", customer: "Amit Kumar", type: "Life", premium: "₹15,000", date: "2026-04-08" },
-    { id: "#POL-1045", customer: "Sneha Reddy", type: "Home", premium: "₹6,000", date: "2026-04-07" },
     { id: "#POL-1044", customer: "Vikram Singh", type: "Health", premium: "₹12,000", date: "2026-04-06" },
+    { id: "#POL-1049", customer: "Neha Singh", type: "Health", premium: "₹10,500", date: "2026-04-05" },
+    { id: "#POL-1050", customer: "Aarti Reddy", type: "Health", premium: "₹9,300", date: "2026-04-04" },
+    { id: "#POL-1051", customer: "Karan Verma", type: "Health", premium: "₹14,800", date: "2026-04-03" },
 ];
 
 export default function AdminDashboard() {

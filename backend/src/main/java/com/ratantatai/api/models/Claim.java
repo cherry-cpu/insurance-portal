@@ -1,12 +1,14 @@
 package com.ratantatai.api.models;
 
-import jakarta.persistence.*;
+import javax.persistence.*;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "claim")
 public class Claim {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO,generator = "SEQ_HOSPITAL_MASTER")
+    @SequenceGenerator(name ="SEQ_HOSPITAL_MASTER",sequenceName = "SEQ_HOSPITAL_MASTER")
     private Long id;
 
     @Column(name = "policy_contract_id", nullable = false)
@@ -20,6 +22,27 @@ public class Claim {
 
     @Column(nullable = false)
     private String status = "SUBMITTED";
+
+    @Column(name = "claim_type")
+    private String claimType;
+
+    @Column(name = "claim_category")
+    private String claimCategory;
+
+    @Column(name = "treatment_type")
+    private String treatmentType;
+
+    @Column(name = "patient_name")
+    private String patientName;
+
+    @Column(name = "diagnosis")
+    private String diagnosis;
+
+    @Column(name = "admission_date")
+    private LocalDate admissionDate;
+
+    @Column(name = "discharge_date")
+    private LocalDate dischargeDate;
 
     @Column(name = "hospital_ref")
     private String hospitalRef;
@@ -64,6 +87,20 @@ public class Claim {
     public void setAmountClaimedPaise(Long amountClaimedPaise) { this.amountClaimedPaise = amountClaimedPaise; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public String getClaimType() { return claimType; }
+    public void setClaimType(String claimType) { this.claimType = claimType; }
+    public String getClaimCategory() { return claimCategory; }
+    public void setClaimCategory(String claimCategory) { this.claimCategory = claimCategory; }
+    public String getTreatmentType() { return treatmentType; }
+    public void setTreatmentType(String treatmentType) { this.treatmentType = treatmentType; }
+    public String getPatientName() { return patientName; }
+    public void setPatientName(String patientName) { this.patientName = patientName; }
+    public String getDiagnosis() { return diagnosis; }
+    public void setDiagnosis(String diagnosis) { this.diagnosis = diagnosis; }
+    public LocalDate getAdmissionDate() { return admissionDate; }
+    public void setAdmissionDate(LocalDate admissionDate) { this.admissionDate = admissionDate; }
+    public LocalDate getDischargeDate() { return dischargeDate; }
+    public void setDischargeDate(LocalDate dischargeDate) { this.dischargeDate = dischargeDate; }
     public String getHospitalRef() { return hospitalRef; }
     public void setHospitalRef(String hospitalRef) { this.hospitalRef = hospitalRef; }
     public String getDoctorRef() { return doctorRef; }
@@ -80,8 +117,8 @@ public class Claim {
     public void setApprovedAmountPaise(Long approvedAmountPaise) { this.approvedAmountPaise = approvedAmountPaise; }
     public Long getSettlementAmountPaise() { return settlementAmountPaise; }
     public void setSettlementAmountPaise(Long settlementAmountPaise) { this.settlementAmountPaise = settlementAmountPaise; }
-    public java.time.LocalDate getSettlementDate() { return settlementDate; }
-    public void setSettlementDate(java.time.LocalDate settlementDate) { this.settlementDate = settlementDate; }
+    public LocalDate getSettlementDate() { return settlementDate; }
+    public void setSettlementDate(LocalDate settlementDate) { this.settlementDate = settlementDate; }
     public String getPayoutReference() { return payoutReference; }
     public void setPayoutReference(String payoutReference) { this.payoutReference = payoutReference; }
     public String getDetailsJson() { return detailsJson; }

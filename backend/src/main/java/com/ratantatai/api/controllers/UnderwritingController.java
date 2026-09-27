@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/underwriting")
@@ -62,7 +63,7 @@ public class UnderwritingController {
     @PostMapping("/{id}/review")
     public ResponseEntity<Map<String, Object>> review(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
         Optional<UnderwritingCase> optionalCase = underwritingRepo.findById(id);
-        if (optionalCase.isEmpty()) {
+        if (optionalCase.isPresent()) {
             return ResponseEntity.notFound().build();
         }
 
@@ -79,14 +80,13 @@ public class UnderwritingController {
         }
         underwriting.setUpdatedAt(OffsetDateTime.now());
         underwritingRepo.save(underwriting);
-
-        return ResponseEntity.ok(Map.of(
-                "status", "success",
-                "id", underwriting.getId(),
-                "decision", underwriting.getDecision(),
-                "backgroundCheckStatus", underwriting.getBackgroundCheckStatus(),
-                "message", "Underwriting case updated."
-        ));
+        Map<String, Object> map = new HashMap<>();
+        map.put("status", "success");
+        map.put("id", underwriting.getId());
+        map.put("decision", underwriting.getDecision());
+        map.put("backgroundCheckStatus", underwriting.getBackgroundCheckStatus());
+        map.put("message", "Underwriting case updated.");
+        return ResponseEntity.ok(map);
     }
 
     private Map<String, Object> evaluateRisk(Map<String, Object> payload) {
@@ -102,7 +102,7 @@ public class UnderwritingController {
             riskScore += 18;
         }
         for (String condition : conditions) {
-            if (condition.isBlank() || "none".equalsIgnoreCase(condition)) continue;
+            if (condition.isEmpty() || "none".equalsIgnoreCase(condition)) continue;
             riskScore += 14;
             if (condition.toLowerCase(Locale.ROOT).contains("heart") || condition.toLowerCase(Locale.ROOT).contains("cancer")) {
                 riskScore += 8;
@@ -140,16 +140,15 @@ public class UnderwritingController {
             rules.add("Declared health conditions require specialist underwriting.");
         }
         if (requestedPaise > 10_000_000L) rules.add("High sum insured leads to elevated risk loading.");
-
-        return Map.of(
-                "riskScore", riskScore,
-                "basePremiumPaise", basePremiumPaise,
-                "recommendedPremiumPaise", recommendedPremiumPaise,
-                "decision", decision,
-                "decisionReason", reason,
-                "medicalCheckRequired", medicalCheckRequired,
-                "rules", rules
-        );
+        Map<String, Object> map = new HashMap<>();
+        map.put("riskScore", riskScore);
+        map.put("basePremiumPaise", basePremiumPaise);
+        map.put("recommendedPremiumPaise", recommendedPremiumPaise);
+        map.put("decision", decision);
+        map.put("decisionReason", reason);
+        map.put("medicalCheckRequired", medicalCheckRequired);
+        map.put("rules", rules);
+        return map;
     }
 
     private int parseInteger(Object raw) {
@@ -182,12 +181,21 @@ public class UnderwritingController {
         }
         if (raw instanceof String) {
             String text = (String) raw;
-            if (text.isBlank()) return List.of();
+
+            if (text == null || text.isEmpty()) {
+                return Collections.emptyList();
+            }
+
             return Arrays.stream(text.split(","))
                     .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .toList();
+                    .filter(new java.util.function.Predicate<String>() {
+                        @Override
+                        public boolean test(String s) {
+                            return !s.isEmpty();
+                        }
+                    })
+                    .collect(Collectors.toList());
         }
-        return List.of();
+        return new ArrayList<>();
     }
 }

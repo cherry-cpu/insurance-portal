@@ -38,13 +38,12 @@ public class FinanceController {
         long totalGst = gstTransactionRepository.findAll().stream().mapToLong(g -> Optional.ofNullable(g.getGstAmountPaise()).orElse(0L)).sum();
         long pendingGst = gstTransactionRepository.findByStatus("PENDING").stream().mapToLong(g -> Optional.ofNullable(g.getGstAmountPaise()).orElse(0L)).sum();
 
-        Map<String, Object> summary = Map.of(
-                "totalRevenue", totalRevenue,
-                "totalGstCaptured", totalGst,
-                "pendingGstLiability", pendingGst,
-                "ledgerEntries", ledgerEntryRepository.count(),
-                "revenueRecords", revenueRecordRepository.count()
-        );
+        Map<String, Object> summary = new HashMap<>();
+        summary.put("totalRevenue", totalRevenue);
+        summary.put("totalGstCaptured", totalGst);
+        summary.put("pendingGstLiability", pendingGst);
+        summary.put("ledgerEntries", ledgerEntryRepository.count());
+        summary.put("revenueRecords", revenueRecordRepository.count());
         return ResponseEntity.ok(summary);
     }
 
@@ -94,6 +93,13 @@ public class FinanceController {
         return revenueRecordRepository.findAll();
     }
 
+    @GetMapping("/revenue/{id}")
+    public ResponseEntity<RevenueRecord> getRevenueById(@PathVariable Long id) {
+        return revenueRecordRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping("/revenue/record")
     public RevenueRecord createRevenueRecord(@RequestBody FinanceRevenueRecordRequest request) {
         RevenueRecord record = new RevenueRecord();
@@ -111,6 +117,33 @@ public class FinanceController {
         }
         record.setCreatedAt(OffsetDateTime.now());
         return revenueRecordRepository.save(record);
+    }
+
+    @PutMapping("/revenue/{id}")
+    public ResponseEntity<RevenueRecord> updateRevenue(@PathVariable Long id, @RequestBody FinanceRevenueRecordRequest request) {
+        return revenueRecordRepository.findById(id).map(record -> {
+            record.setGrossAmountPaise(request.getGrossAmountPaise());
+            record.setGstAmountPaise(request.getGstAmountPaise());
+            record.setPeriod(request.getPeriod());
+            return ResponseEntity.ok(revenueRecordRepository.save(record));
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/revenue/{id}")
+    public ResponseEntity<?> deleteRevenue(@PathVariable Long id) {
+        return revenueRecordRepository.findById(id).map(record -> {
+            revenueRecordRepository.delete(record);
+            return ResponseEntity.ok(Collections.singletonMap("message", "Revenue record deleted"));
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/revenue/{id}/export-pdf")
+    public ResponseEntity<?> exportRevenuePdf(@PathVariable Long id) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "success");
+        response.put("message", "Financial report PDF export initiated for revenue record: " + id);
+        response.put("downloadUrl", "/api/files/financial-report-" + id + ".pdf");
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/gst/transactions")

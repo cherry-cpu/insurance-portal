@@ -15,6 +15,9 @@ import HospitalClaimApply from "./pages/hospital/HospitalClaimApply";
 import HospitalSearch from "./pages/customer/HospitalSearch";
 import HospitalManagement from "./pages/admin/HospitalManagement";
 import UnderwritingMgmtView from "./components/modules/UnderwritingMgmtView";
+import HealthPortal from "./pages/health/HealthPortal";
+import HealthPage from "./pages/health/HealthPage";
+import ProjectOverview from "./pages/ProjectOverview";
 
 function App() {
   return (
@@ -23,6 +26,7 @@ function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/modules" element={<ModuleHub />} />
         <Route path="/modules/:moduleId" element={<ModuleDetail />} />
+        <Route path="/project-overview" element={<ProjectOverview />} />
         <Route path="/login" element={<Login />} />
 
         <Route path="/dashboard" element={<Dashboard />} />
@@ -33,6 +37,9 @@ function App() {
 
         <Route path="/doctor" element={<DoctorClaimCheck />} />
         <Route path="/hospital" element={<HospitalClaimApply />} />
+
+        <Route path="/health" element={<HealthPortal />} />
+        <Route path="/health/:pageId" element={<HealthPage />} />
 
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/claims" element={<ClaimsManagement />} />

@@ -37,7 +37,7 @@ export default function GenericModuleView({ moduleInfo }) {
             tableData: [
                 ['Emily White', 'Health Family', '94', 'Ready to Buy', 'Follow-up Required'],
                 ['David Green', 'Life Term', '42', 'Browsing', 'Nurture'],
-                ['Sarah King', 'Auto', '81', 'Comparing Quotes', 'Emailed Quote'],
+                ['Sarah King', 'Health Care', '81', 'Comparing Quotes', 'Emailed Quote'],
             ]
         },
         'renewal': {
@@ -102,7 +102,7 @@ export default function GenericModuleView({ moduleInfo }) {
             tableCols: ['Campaign', 'Channel', 'Audience', 'Sent', 'Engaged'],
             tableData: [
                 ['Q2 Health Promo', 'Email', 'Lapsed_Past_Year', '12,000', '1,402'],
-                ['Auto Cross-sell', 'SMS', 'Health_Holders_Only', '8,400', '920'],
+                ['Health Cross-sell', 'SMS', 'Health_Holders_Only', '8,400', '920'],
                 ['Diwali Term Pitch', 'WhatsApp', 'Age_30_45', '4,200', '801'],
             ]
         },
@@ -112,7 +112,7 @@ export default function GenericModuleView({ moduleInfo }) {
             tabs: [ { id: 'main', label: 'Rules Engine' }, { id: 'history', label: 'Task Queues' }, { id: 'audit', label: 'SLA Monitor' } ],
             tableCols: ['Rule Name', 'Trigger', 'Action', 'Priority', 'Status'],
             tableData: [
-                ['Auto-Approve Claim <$100', 'Claim Filed', 'Approve & Pay', 'High', 'Active'],
+                ['Smart Approve Claim <$100', 'Claim Filed', 'Approve & Pay', 'High', 'Active'],
                 ['Route VIP Renewals', 'Renewal -30D', 'Assign to Sr. Agent', 'Medium', 'Active'],
                 ['Flag High Risk', 'Score > 80', 'Manual Underwriting', 'Highest', 'Active'],
             ]

@@ -25,8 +25,13 @@ export default function HospitalClaimApply() {
         hospitalName: "",
         patientName: "",
         policyId: "",
+        claimType: "CASHLESS",
+        claimCategory: "Hospitalization",
         claimAmount: "",
         diagnosis: "",
+        admissionDate: "",
+        dischargeDate: "",
+        doctorName: "",
         serviceDate: "",
         notes: "",
     });
@@ -103,8 +108,16 @@ export default function HospitalClaimApply() {
             const elig = await checkEligibility(selectedHospital.id, form.policyId.trim());
             const response = await submitClaim({
                 policyNumber: form.policyId.trim(),
+                claimType: form.claimType,
+                claimCategory: form.claimCategory,
+                treatmentType: form.diagnosis.trim(),
+                patientName: form.patientName.trim(),
                 amountClaimedPaise: Math.round(Number(form.claimAmount) * 100),
+                admissionDate: form.admissionDate || form.serviceDate,
+                dischargeDate: form.dischargeDate,
                 hospitalRef: selectedHospital.id,
+                doctorName: form.doctorName.trim(),
+                diagnosis: form.diagnosis.trim(),
                 detailsJson: JSON.stringify({
                     patientName: form.patientName.trim(),
                     diagnosis: form.diagnosis.trim(),
@@ -176,7 +189,13 @@ export default function HospitalClaimApply() {
                                             <div>
                                                 <p className="font-semibold text-slate-900">{hospital.name}</p>
                                                 <p className="text-sm text-slate-500">{hospital.city}, {hospital.state || "India"}</p>
-                                                <p className="text-xs text-slate-400">Network: {hospital.networkType || "NON_NETWORK"}</p>
+                                                <p className="mt-1 text-xs text-slate-400">Network: {hospital.networkType || "NON_NETWORK"}</p>
+                                                {hospital.specializations && (
+                                                    <p className="mt-1 text-xs text-slate-400">Specialties: {hospital.specializations}</p>
+                                                )}
+                                                {hospital.accreditation && (
+                                                    <p className="mt-1 text-xs text-slate-400">Accreditation: {hospital.accreditation}</p>
+                                                )}
                                             </div>
                                             <span className={`rounded-full px-3 py-1 text-xs font-semibold ${hospital.cashless ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>
                                                 {hospital.cashless ? "Cashless" : "Reimbursement"}
@@ -215,8 +234,13 @@ export default function HospitalClaimApply() {
                                         hospitalName: "",
                                         patientName: "",
                                         policyId: "",
+                                        claimType: "CASHLESS",
+                                        claimCategory: "Hospitalization",
                                         claimAmount: "",
                                         diagnosis: "",
+                                        admissionDate: "",
+                                        dischargeDate: "",
+                                        doctorName: "",
                                         serviceDate: "",
                                         notes: "",
                                     });
@@ -255,6 +279,75 @@ export default function HospitalClaimApply() {
                                         value={form.policyId}
                                         onChange={(e) => setForm({ ...form, policyId: e.target.value })}
                                         placeholder="POL-1001"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label className="mb-2 block text-sm font-medium text-slate-700">Claim type</label>
+                                    <select
+                                        className="input-premium"
+                                        value={form.claimType}
+                                        onChange={(e) => setForm({ ...form, claimType: e.target.value })}
+                                    >
+                                        <option value="CASHLESS">Cashless</option>
+                                        <option value="REIMBURSEMENT">Reimbursement</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="mb-2 block text-sm font-medium text-slate-700">Claim category</label>
+                                    <select
+                                        className="input-premium"
+                                        value={form.claimCategory}
+                                        onChange={(e) => setForm({ ...form, claimCategory: e.target.value })}
+                                    >
+                                        <option>Hospitalization</option>
+                                        <option>OPD</option>
+                                        <option>Maternity</option>
+                                        <option>Dental</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label className="mb-2 block text-sm font-medium text-slate-700">Attending doctor</label>
+                                    <input
+                                        className="input-premium"
+                                        value={form.doctorName}
+                                        onChange={(e) => setForm({ ...form, doctorName: e.target.value })}
+                                        placeholder="Dr. A. Rao"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="mb-2 block text-sm font-medium text-slate-700">Hospital / provider</label>
+                                    <input
+                                        className="input-premium"
+                                        value={form.hospitalName}
+                                        onChange={(e) => setForm({ ...form, hospitalName: e.target.value })}
+                                        placeholder="Hospital name or ID"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label className="mb-2 block text-sm font-medium text-slate-700">Admission date</label>
+                                    <input
+                                        type="date"
+                                        className="input-premium"
+                                        value={form.admissionDate}
+                                        onChange={(e) => setForm({ ...form, admissionDate: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="mb-2 block text-sm font-medium text-slate-700">Discharge date</label>
+                                    <input
+                                        type="date"
+                                        className="input-premium"
+                                        value={form.dischargeDate}
+                                        onChange={(e) => setForm({ ...form, dischargeDate: e.target.value })}
                                     />
                                 </div>
                             </div>

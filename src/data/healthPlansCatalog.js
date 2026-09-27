@@ -2,6 +2,12 @@
  * Health-only buy flow: age bracket + pre-existing conditions adjust premium & eligibility.
  */
 
+export const PLAN_CATEGORIES = [
+    { id: "individual", label: "Individual Plan", description: "Coverage for a single person" },
+    { id: "family", label: "Family Plan", description: "Coverage for family members (up to 4)" },
+    { id: "senior", label: "Senior Citizen Plan", description: "Specialized coverage for seniors 60+" },
+];
+
 export const AGE_BRACKETS = [
     { id: "0-17", label: "0–17 (dependent / child)", factor: 0.75 },
     { id: "18-30", label: "18–30 years", factor: 0.88 },
@@ -25,12 +31,14 @@ export const CONDITION_OPTIONS = [
  * Health plans — base annual premium in ₹ before age/condition factors.
  * excludedConditions: if user selected any of these, plan is hidden.
  * minAgeBracket / maxAgeBracket: bracket ids from AGE_BRACKETS
+ * category: from PLAN_CATEGORIES
  */
 export const HEALTH_PLANS = [
     {
         id: "youth-shield",
         name: "Youth Shield",
         tier: "Starter",
+        category: "individual",
         summary: "Ideal for young individuals with no or low chronic load.",
         basePremium: 7200,
         coverage: 400000,
@@ -43,6 +51,7 @@ export const HEALTH_PLANS = [
         id: "family-care",
         name: "Family Care Plus",
         tier: "Popular",
+        category: "family",
         summary: "Balanced cover for families; accepts common lifestyle conditions.",
         basePremium: 11800,
         coverage: 750000,
@@ -55,6 +64,7 @@ export const HEALTH_PLANS = [
         id: "chronic-comfort",
         name: "Chronic Comfort",
         tier: "Chronic",
+        category: "individual",
         summary: "Designed for diabetes, BP, and respiratory declarations.",
         basePremium: 15400,
         coverage: 900000,
@@ -67,6 +77,7 @@ export const HEALTH_PLANS = [
         id: "gold-secure",
         name: "Gold Secure Health",
         tier: "Gold",
+        category: "family",
         summary: "High sum insured with wider disease acceptance (except active cancer treatment).",
         basePremium: 19800,
         coverage: 1200000,
@@ -79,6 +90,7 @@ export const HEALTH_PLANS = [
         id: "senior-elite",
         name: "Senior Elite",
         tier: "Senior",
+        category: "senior",
         summary: "Tailored for 46+ with enhanced domiciliary and post-discharge care.",
         basePremium: 24600,
         coverage: 1000000,
@@ -91,6 +103,7 @@ export const HEALTH_PLANS = [
         id: "oncology-guard",
         name: "Oncology Guard Rider+",
         tier: "Specialist",
+        category: "individual",
         summary: "For declared cancer history — mandatory specialist underwriting.",
         basePremium: 28900,
         coverage: 1500000,
@@ -123,10 +136,11 @@ function conditionMultiplier(selectedIds) {
 }
 
 /** Returns eligible plans with computed annual premium */
-export function getEligiblePlans(ageBracketId, selectedConditionIds) {
+export function getEligiblePlans(ageBracketId, selectedConditionIds, categoryId = null) {
     const conds = selectedConditionIds.includes("none") ? ["none"] : selectedConditionIds.filter((id) => id !== "none");
 
     return HEALTH_PLANS.filter((plan) => {
+        if (categoryId && plan.category !== categoryId) return false;
         if (!bracketInRange(ageBracketId, plan.minAgeBracket, plan.maxAgeBracket)) return false;
         const hasNoneOnly = conds.length === 0 || (conds.length === 1 && conds[0] === "none");
         if (plan.requiredConditions?.length) {

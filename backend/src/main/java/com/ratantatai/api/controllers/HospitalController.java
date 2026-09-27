@@ -56,15 +56,18 @@ public class HospitalController {
         hospital.setState(payload.get("state"));
         hospital.setTier(payload.getOrDefault("tier", "TIER_1"));
         hospital.setNetworkType(payload.getOrDefault("networkType", "NON_NETWORK"));
+        hospital.setSpecializations(payload.get("specializations"));
+        hospital.setAccreditation(payload.get("accreditation"));
+        hospital.setFacilities(payload.get("facilities"));
         hospital.setStandardRoomRentLimit(parseLong(payload.get("standardRoomRentLimit")));
         hospital.setPremiumRoomRentLimit(parseLong(payload.get("premiumRoomRentLimit")));
 
         HospitalMaster saved = hospitalRepo.save(hospital);
-        return ResponseEntity.ok(Map.of(
-            "status", "success",
-            "message", "Hospital '" + saved.getName() + "' registered to " + saved.getCity() + ".",
-            "hospitalId", saved.getId()
-        ));
+        Map<String, Object> map = new HashMap<>();
+        map.put( "status", "success");
+        map.put("message", "Hospital '" + saved.getName() + "' registered to " + saved.getCity() + ".");
+        map.put("hospitalId", saved.getId());
+        return ResponseEntity.ok(map);
     }
 
     @PostMapping("/map-plan")
@@ -74,7 +77,10 @@ public class HospitalController {
         Boolean cashless = parseBoolean(payload.get("isCashless"));
 
         if (hospitalId == null || productId == null) {
-            return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "hospitalId and productId are required."));
+            Map<String, Object> error = new HashMap<>();
+            error.put("status", "error");
+            error.put("message", "hospitalId, procedureName, and maxCoverage are required.");
+            return ResponseEntity.badRequest().body(error);
         }
 
         HospitalPlanMapping mapping = new HospitalPlanMapping();
@@ -83,11 +89,12 @@ public class HospitalController {
         mapping.setIsCashless(cashless != null ? cashless : true);
         HospitalPlanMapping saved = mappingRepo.save(mapping);
 
-        return ResponseEntity.ok(Map.of(
-            "status", "success",
-            "message", "Plan " + saved.getProductId() + " mapped to hospital " + saved.getHospitalId() + ".",
-            "mappingId", saved.getId()
-        ));
+        Map<String, Object> map = new HashMap<>();
+        map.put( "status", "success");
+        map.put("message", "Hospital '" + saved.getProductId() + "' registered to " + saved.getHospitalId() + ".");
+        map.put("hospitalId", saved.getId());
+
+        return ResponseEntity.ok(map);
     }
 
     @PostMapping("/tariffs")
@@ -98,7 +105,10 @@ public class HospitalController {
         LocalDate effectiveDate = payload.get("effectiveDate") != null ? LocalDate.parse(payload.get("effectiveDate")) : LocalDate.now();
 
         if (hospitalId == null || procedure == null || maxCoverage == null) {
-            return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "hospitalId, procedureName, and maxCoverage are required."));
+            Map<String, Object> error = new HashMap<>();
+            error.put("status", "error");
+            error.put("message", "hospitalId, procedureName, and maxCoverage are required.");
+            return ResponseEntity.badRequest().body(error);
         }
 
         HospitalTariff tariff = new HospitalTariff();
@@ -107,12 +117,11 @@ public class HospitalController {
         tariff.setMaxCoverage(maxCoverage);
         tariff.setEffectiveDate(effectiveDate);
         HospitalTariff saved = tariffRepo.save(tariff);
-
-        return ResponseEntity.ok(Map.of(
-            "status", "success",
-            "message", "Tariff ceiling of " + saved.getMaxCoverage() + " mapped to " + saved.getProcedureName() + ".",
-            "tariffId", saved.getId()
-        ));
+        Map<String, Object> map = new HashMap<>();
+        map.put("status", "success");
+        map.put("message", "Tariff ceiling of " + saved.getMaxCoverage() + " mapped to " + saved.getProcedureName() + ".");
+        map.put( "tariffId", saved.getId());
+        return ResponseEntity.ok(map);
     }
 
     @PostMapping("/packages")
@@ -122,7 +131,10 @@ public class HospitalController {
         Long packageRate = parseLong(payload.get("packageRate"));
 
         if (hospitalId == null || procedureName == null || packageRate == null) {
-            return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "hospitalId, procedureName, and packageRate are required."));
+            Map<String, Object> error = new HashMap<>();
+            error.put("status", "error");
+            error.put("message", "hospitalId, procedureName, and packageRate are required.");
+            return ResponseEntity.badRequest().body(error);
         }
 
         HospitalPackage hospitalPackage = new HospitalPackage();
@@ -133,12 +145,11 @@ public class HospitalController {
         hospitalPackage.setCurrency(payload.getOrDefault("currency", "INR"));
         hospitalPackage.setEffectiveDate(payload.get("effectiveDate") != null ? LocalDate.parse(payload.get("effectiveDate")) : LocalDate.now());
         HospitalPackage saved = packageRepo.save(hospitalPackage);
-
-        return ResponseEntity.ok(Map.of(
-            "status", "success",
-            "message", "Package " + saved.getProcedureName() + " added for hospital " + saved.getHospitalId() + ".",
-            "packageId", saved.getId()
-        ));
+        Map<String, Object> map = new HashMap<>();
+        map.put("status", "success");
+        map.put("message", "Package " + saved.getProcedureName() + " added for hospital " + saved.getHospitalId() + ".");
+        map.put("packageId", saved.getId());
+        return ResponseEntity.ok(map);
     }
 
     @GetMapping("/{hospitalId}/packages")
@@ -152,7 +163,11 @@ public class HospitalController {
         String contractName = payload.get("contractName");
 
         if (hospitalId == null || contractName == null) {
-            return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "hospitalId and contractName are required."));
+            Map<String, Object> error = new HashMap<>();
+            error.put("status", "error");
+            error.put("message", "hospitalId, contractName are required.");
+
+            return ResponseEntity.badRequest().body(error);
         }
 
         HospitalContract contract = new HospitalContract();
@@ -164,12 +179,12 @@ public class HospitalController {
         contract.setEndDate(payload.get("endDate") != null ? LocalDate.parse(payload.get("endDate")) : null);
         contract.setStatus(payload.getOrDefault("status", "ACTIVE"));
         HospitalContract saved = contractRepo.save(contract);
+        Map<String, Object> map = new HashMap<>();
+        map.put("status", "success");
+        map.put("message", "Contract " + saved.getContractName() + "  registered for hospital " + saved.getHospitalId() + ".");
+        map.put("packageId", saved.getId());
 
-        return ResponseEntity.ok(Map.of(
-            "status", "success",
-            "message", "Contract " + saved.getContractName() + " registered for hospital " + saved.getHospitalId() + ".",
-            "contractId", saved.getId()
-        ));
+        return ResponseEntity.ok(map);
     }
 
     @GetMapping("/{hospitalId}/contracts")
@@ -179,11 +194,11 @@ public class HospitalController {
 
     @GetMapping("/search")
     public ResponseEntity<?> searchHospitals(@RequestParam(required = false) String location, @RequestParam(required = false) String planId) {
-        List<HospitalMaster> hospitals = (location != null && !location.isBlank())
+        List<HospitalMaster> hospitals = (location != null && !location.isEmpty())
             ? hospitalRepo.findByCityIgnoreCaseContaining(location)
             : hospitalRepo.findAll();
 
-        if (planId != null && !planId.isBlank()) {
+        if (planId != null && !planId.isEmpty()) {
             Long productId = parseLong(planId);
             if (productId != null) {
                 Set<Long> allowedHospitalIds = mappingRepo.findByProductId(productId).stream()
@@ -198,18 +213,24 @@ public class HospitalController {
         List<Map<String, Object>> results = hospitals.stream().map(h -> {
             boolean cashless = mappingRepo.findByHospitalId(h.getId()).stream()
                 .anyMatch(mapping -> Boolean.TRUE.equals(mapping.getIsCashless()));
-            return Map.of(
-                "id", h.getId(),
-                "name", h.getName(),
-                "city", h.getCity(),
-                "state", h.getState(),
-                "tier", h.getTier(),
-                "networkType", h.getNetworkType(),
-                "cashless", cashless
-            );
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", h.getId());
+            map.put("name", h.getName());
+            map.put("city", h.getCity());
+            map.put("state", h.getState());
+            map.put("tier", h.getTier());
+            map.put("networkType", h.getNetworkType());
+            map.put("specializations", h.getSpecializations());
+            map.put("accreditation", h.getAccreditation());
+            map.put("facilities", h.getFacilities());
+            map.put("cashless", cashless);
+            return map;
         }).collect(Collectors.toList());
+        Map<String, Object> error = new HashMap<>();
+        error.put("status", "success");
+        error.put("results", results);
 
-        return ResponseEntity.ok(Map.of("status", "success", "results", results));
+        return ResponseEntity.ok(error);
     }
 
     @GetMapping("/{hospitalId}/mappings")
@@ -231,7 +252,10 @@ public class HospitalController {
 
         PolicyContract policy = policyRepo.findByPolicyNumber(policyNumber);
         if (policy == null) {
-            return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Policy not found."));
+            Map<String, Object> error = new HashMap<>();
+            error.put("status", "error");
+            error.put("message",  "Policy not found.");
+            return ResponseEntity.badRequest().body(error);
         }
 
         List<HospitalPlanMapping> planMappings = mappingRepo.findByHospitalIdAndProductId(hospitalId, policy.getProductId());
@@ -248,17 +272,17 @@ public class HospitalController {
             authorizationMessage = "Hospital is empaneled, but cashless is not configured for this plan. Reimbursement only.";
         }
 
-        return ResponseEntity.ok(Map.of(
-            "status", "success",
-            "policyNumber", policyNumber,
-            "hospitalId", hospital.getId(),
-            "hospitalName", hospital.getName(),
-            "hospitalNetworkType", hospital.getNetworkType(),
-            "hospitalTier", hospital.getTier(),
-            "hospitalMapped", isMapped,
-            "cashlessEligible", cashlessEligible,
-            "authorizationMessage", authorizationMessage
-        ));
+        Map<String, Object> map = new HashMap<>();
+        map.put("status", "success");
+        map.put("policyNumber", policyNumber);
+        map.put("hospitalId", hospital.getId());
+        map.put("hospitalName", hospital.getName());
+        map.put("hospitalNetworkType", hospital.getNetworkType());
+        map.put("hospitalTier", hospital.getTier());
+        map.put("hospitalMapped", isMapped);
+        map.put("cashlessEligible", cashlessEligible);
+        map.put("authorizationMessage", authorizationMessage);
+        return ResponseEntity.ok(map);
     }
 
     private Long parseLong(Object value) {

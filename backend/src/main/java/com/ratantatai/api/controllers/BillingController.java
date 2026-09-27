@@ -46,6 +46,13 @@ public class BillingController {
         return paymentRepo.findAll();
     }
 
+    @GetMapping("/payments/{id}")
+    public ResponseEntity<Payment> getPaymentById(@PathVariable Long id) {
+        return paymentRepo.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping("/payments/record")
     public Payment recordPayment(@RequestBody BillingPaymentRequest request) {
         Payment payment = new Payment();
@@ -64,6 +71,33 @@ public class BillingController {
         payment.setCreatedAt(OffsetDateTime.now());
         payment.setUpdatedAt(OffsetDateTime.now());
         return paymentRepo.save(payment);
+    }
+
+    @PutMapping("/payments/{id}")
+    public ResponseEntity<Payment> updatePayment(@PathVariable Long id, @RequestBody BillingPaymentRequest request) {
+        return paymentRepo.findById(id).map(payment -> {
+            payment.setStatus(request.getStatus());
+            payment.setAmountPaise(request.getAmountPaise());
+            payment.setUpdatedAt(OffsetDateTime.now());
+            return ResponseEntity.ok(paymentRepo.save(payment));
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/payments/{id}")
+    public ResponseEntity<?> deletePayment(@PathVariable Long id) {
+        return paymentRepo.findById(id).map(payment -> {
+            paymentRepo.delete(payment);
+            return ResponseEntity.ok(Collections.singletonMap("message", "Payment deleted"));
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/payments/{id}/export-pdf")
+    public ResponseEntity<?> exportPaymentPdf(@PathVariable Long id) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "success");
+        response.put("message", "Receipt PDF export initiated for payment ID: " + id);
+        response.put("downloadUrl", "/api/files/receipt-" + id + ".pdf");
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/installments")
@@ -103,7 +137,7 @@ public class BillingController {
     @PostMapping("/installments/{id}/pay")
     public ResponseEntity<InstallmentSchedule> payInstallment(@PathVariable Long id, @RequestBody Map<String, String> payload) {
         Optional<InstallmentSchedule> optional = installmentRepo.findById(id);
-        if (optional.isEmpty()) {
+        if (optional.isPresent()) {
             return ResponseEntity.notFound().build();
         }
 

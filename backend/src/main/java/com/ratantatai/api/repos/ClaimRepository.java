@@ -11,4 +11,5 @@ public interface ClaimRepository extends JpaRepository<Claim, Long> {
     List<Claim> findByPolicyContractId(Long policyContractId);
     List<Claim> findByStatus(String status);
     Claim findByClaimNumber(String claimNumber);
+    long countByStatus(String status);
 }

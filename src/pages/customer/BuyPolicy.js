@@ -4,28 +4,31 @@ import Navbar from "../../components/Navbar";
 import PageShell from "../../components/PageShell";
 import RazorpayButton from "../../components/RazorpayButton";
 import { APP_NAME } from "../../brand";
-import { AGE_BRACKETS, CONDITION_OPTIONS, getEligiblePlans, HEALTH_PLANS } from "../../data/healthPlansCatalog";
+import { AGE_BRACKETS, CONDITION_OPTIONS, getEligiblePlans, HEALTH_PLANS, PLAN_CATEGORIES } from "../../data/healthPlansCatalog";
 import { GENERAL_POLICY_GRID } from "../../data/generalPolicies";
 import { HEALTH_CHECKUP_RULE, POLICY_TERMS_SECTIONS } from "../../data/policyTerms";
 import { INDIAN_STATES } from "../../data/indianStates";
 import { buildPolicyScheduleHtml, downloadPolicyHtml } from "../../lib/policyDocument";
 import { clearPendingPurchase, getPendingPurchase, getSession, setPendingPurchase } from "../../lib/session";
+import { createPolicyContract, createUnderwritingCase, quoteUnderwriting } from "../../api/client";
 
 const STEPS = [
     { n: 1, label: "Personal" },
     { n: 2, label: "Health" },
-    { n: 3, label: "Nominee" },
-    { n: 4, label: "Review & Pay" },
+    { n: 3, label: "Riders & Proposer" },
+    { n: 4, label: "Nominee" },
+    { n: 5, label: "Review & Pay" },
 ];
 
 export default function BuyPolicy() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
-    /** marketplace → health (configure) → wizard → done */
+    /** marketplace → category → health (configure) → wizard → done */
     const [view, setView] = useState("marketplace");
     const [step, setStep] = useState(1);
 
+    const [selectedCategory, setSelectedCategory] = useState("");
     const [ageBracket, setAgeBracket] = useState("31-45");
     const [conditions, setConditions] = useState(["none"]);
     const [selectedPlanId, setSelectedPlanId] = useState("");
@@ -35,16 +38,39 @@ export default function BuyPolicy() {
         email: "",
         phone: "",
         dob: "",
+        gender: "male",
+        maritalStatus: "",
+        panCard: "",
+        noPan: false,
         addressLine1: "",
+        addressLine2: "",
+        landmark: "",
         state: "",
         district: "",
         city: "",
         pincode: "",
+        sameAsCommunication: true,
+        permAddressLine1: "",
+        permAddressLine2: "",
+        permLandmark: "",
+        permState: "",
+        permDistrict: "",
+        permCity: "",
+        permPincode: "",
     });
     const [health, setHealth] = useState({
-        heightCm: "",
+        heightFeet: "",
+        heightInches: "",
         weightKg: "",
         tobacco: "no",
+        medicalHistory: "",
+        riders: [],
+    });
+    const [proposer, setProposer] = useState({
+        fullName: "",
+        noLastName: false,
+        maritalStatus: "",
+        gender: "male",
     });
     const [nominee, setNominee] = useState({
         name: "",
@@ -55,9 +81,13 @@ export default function BuyPolicy() {
     const [termsAccepted, setTermsAccepted] = useState(false);
     const [medicalAck, setMedicalAck] = useState(false);
     const [purchased, setPurchased] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [purchaseStatus, setPurchaseStatus] = useState("");
+    const [purchaseError, setPurchaseError] = useState("");
+    const [underwritingQuote, setUnderwritingQuote] = useState(null);
     const [policyNumber] = useState(() => `POL-RT-${Date.now().toString(36).toUpperCase().slice(-10)}`);
 
-    const eligiblePlans = useMemo(() => getEligiblePlans(ageBracket, conditions), [ageBracket, conditions]);
+    const eligiblePlans = useMemo(() => getEligiblePlans(ageBracket, conditions, selectedCategory), [ageBracket, conditions, selectedCategory]);
     const selected = eligiblePlans.find((p) => p.id === selectedPlanId);
 
     const needsMedicalExam =
@@ -67,6 +97,7 @@ export default function BuyPolicy() {
         const p = getPendingPurchase();
         const s = getSession();
         if (p && s && p.selectedPlanId) {
+            setSelectedCategory(p.selectedCategory || "");
             setAgeBracket(p.ageBracket || "31-45");
             setConditions(p.conditions || ["none"]);
             setSelectedPlanId(p.selectedPlanId);
@@ -86,12 +117,13 @@ export default function BuyPolicy() {
             if (withoutNone.includes(id)) return withoutNone.length <= 1 ? ["none"] : withoutNone.filter((x) => x !== id);
             return [...withoutNone, id];
         });
+        setSelectedPlanId("");
     };
 
     const continueToApplication = () => {
         if (!selectedPlanId || !selected) return;
         if (!getSession()) {
-            setPendingPurchase({ ageBracket, conditions, selectedPlanId });
+            setPendingPurchase({ selectedCategory, ageBracket, conditions, selectedPlanId });
             navigate(`/login?redirect=${encodeURIComponent("/buy")}`);
             return;
         }
@@ -100,34 +132,68 @@ export default function BuyPolicy() {
     };
 
     const nextStep = () => {
+        console.log('Current step:', step);
         if (step === 1) {
             if (
                 !personal.name.trim() ||
                 !personal.email.trim() ||
                 !personal.phone.trim() ||
-                !personal.addressLine1.trim() ||
+                !personal.dob ||
                 !personal.state ||
                 !personal.district.trim() ||
                 !personal.city.trim() ||
                 !personal.pincode.trim()
-            )
+            ) {
+                console.error('Step 1 validation failed:', personal);
                 return;
-            if (!/^\d{6}$/.test(personal.pincode.trim())) return;
+            }
+            if (!/^\d{6}$/.test(personal.pincode.trim())) {
+                console.error('Invalid pincode:', personal.pincode);
+                return;
+            }
+            if (!personal.sameAsCommunication) {
+                if (
+                    !personal.permAddressLine1.trim() ||
+                    !personal.permCity.trim() ||
+                    !personal.permState ||
+                    !personal.permPincode.trim()
+                ) {
+                    console.error('Permanent address validation failed:', personal);
+                    return;
+                }
+                if (!/^\d{6}$/.test(personal.permPincode.trim())) {
+                    console.error('Invalid permanent pincode:', personal.permPincode);
+                    return;
+                }
+            }
         }
         if (step === 2) {
-            if (!health.heightCm || !health.weightKg) return;
+            if (!health.heightFeet || !health.heightInches || !health.weightKg) {
+                console.error('Step 2 validation failed:', health);
+                return;
+            }
         }
         if (step === 3) {
-            if (!nominee.name.trim() || !nominee.relationship.trim() || !nominee.phone.trim()) return;
+            if (!proposer.fullName.trim() || !proposer.maritalStatus || !proposer.gender) {
+                console.error('Step 3 validation failed:', proposer);
+                return;
+            }
         }
-        setStep((s) => Math.min(4, s + 1));
+        if (step === 4) {
+            if (!nominee.name.trim() || !nominee.relationship.trim() || !nominee.phone.trim()) {
+                console.error('Step 4 validation failed:', nominee);
+                return;
+            }
+        }
+        console.log('Validation passed for step:', step);
+        setStep((s) => Math.min(5, s + 1));
     };
 
     const prevStep = () => setStep((s) => Math.max(1, s - 1));
 
     const personalForDoc = {
         ...personal,
-        address: `${personal.addressLine1}, ${personal.city}, ${personal.district}, ${personal.state} — ${personal.pincode}`,
+        address: `${personal.addressLine1}, ${personal.addressLine2 ? personal.addressLine2 + ', ' : ''}${personal.city}, ${personal.district}, ${personal.state} — ${personal.pincode}`,
     };
 
     const handleDownloadSchedule = () => {
@@ -151,9 +217,98 @@ export default function BuyPolicy() {
 
     const amountPaise = selected ? Math.round(selected.computedPremium * 100) : 0;
 
-    const paymentSuccess = () => {
-        setPurchased(true);
-        setTimeout(() => navigate("/dashboard"), 2500);
+    const estimateAge = (dob) => {
+        if (!dob) return 0;
+        const birth = new Date(dob);
+        if (Number.isNaN(birth.getTime())) return 0;
+        const today = new Date();
+        let age = today.getFullYear() - birth.getFullYear();
+        if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) {
+            age -= 1;
+        }
+        return Math.max(0, age);
+    };
+
+    const buildUnderwritingPayload = () => ({
+        policyNumber,
+        applicantName: personal.name,
+        age: estimateAge(personal.dob),
+        gender: personal.gender,
+        tobaccoUse: health.tobacco,
+        conditions,
+        medicalHistoryNotes: health.medicalHistory,
+        requestedSumInsuredPaise: selected ? selected.coverage * 100 : 0,
+    });
+
+    const buildPolicyPayload = () => ({
+        policyNumber,
+        userId: 1,
+        productId: 1,
+        status: needsMedicalExam ? "PENDING_ISSUANCE" : "ACTIVE",
+        nomineeJson: JSON.stringify({
+            ...nominee,
+            relationship: nominee.relationship,
+            phone: nominee.phone,
+        }),
+        healthJson: JSON.stringify({
+            planId: selected?.id,
+            planName: selected?.name,
+            category: selectedCategory,
+            coverage: selected?.coverage,
+            premiumPaise: selected ? selected.computedPremium * 100 : 0,
+            riders: health.riders,
+            tobacco: health.tobacco,
+            medicalHistory: health.medicalHistory,
+            ageBracket,
+            conditions,
+            proposer,
+        }),
+    });
+
+    const handleQuoteUnderwriting = async () => {
+        setPurchaseError("");
+        setPurchaseStatus("Assessing underwriting risk…");
+        setIsSubmitting(true);
+        try {
+            if (!selected) {
+                throw new Error("Please select a plan before requesting underwriting.");
+            }
+            const quote = await quoteUnderwriting(buildUnderwritingPayload());
+            setUnderwritingQuote(quote);
+            setPurchaseStatus("Underwriting preview completed.");
+        } catch (error) {
+            setPurchaseError(error.message || "Unable to calculate underwriting quote.");
+            setPurchaseStatus("");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handlePaymentSuccess = async (paymentId) => {
+        setPurchaseError("");
+        setPurchaseStatus("Recording policy purchase…");
+        setIsSubmitting(true);
+
+        try {
+            await createPolicyContract(buildPolicyPayload());
+            if (needsMedicalExam || (underwritingQuote && underwritingQuote.decision !== "APPROVE")) {
+                const savedUw = await createUnderwritingCase(buildUnderwritingPayload());
+                setPurchaseStatus(`Policy recorded. Underwriting case ${savedUw.applicationNumber || savedUw.id} created.`);
+            } else {
+                setPurchaseStatus("Policy contract saved successfully.");
+            }
+            setPurchased(true);
+            setTimeout(() => navigate("/dashboard"), 2500);
+        } catch (error) {
+            setPurchaseError(error.message || "Failed to record purchase after payment.");
+            setPurchaseStatus("");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const paymentFailure = () => {
+        setPurchaseError("Payment was not completed.");
     };
 
     return (
@@ -204,24 +359,55 @@ export default function BuyPolicy() {
                                     </div>
                                     <button
                                         type="button"
-                                        onClick={() => setView("health")}
+                                        onClick={() => setView("category")}
                                         className="btn-primary mt-8 w-full py-3.5 sm:w-auto"
                                     >
-                                        Continue to health plan selection →
+                                        Continue to plan categories →
                                     </button>
                                 </div>
                             </div>
                         )}
 
-                        {/* 2) Health — plan details from catalog */}
-                        {view === "health" && (
+                        {/* 2) Category selection */}
+                        {view === "category" && (
                             <div className="card-premium space-y-8 p-6 sm:p-8">
                                 <div>
                                     <button type="button" onClick={() => setView("marketplace")} className="text-sm font-semibold text-blue-600">
                                         ← Back to categories
                                     </button>
-                                    <h2 className="mt-4 text-xl font-extrabold text-slate-900">Health — benefits &amp; eligibility</h2>
-                                    <p className="mt-1 text-sm text-slate-600">All plans below follow IRDAI guidelines (demo data).</p>
+                                    <h2 className="mt-4 text-xl font-extrabold text-slate-900">Choose your plan type</h2>
+                                    <p className="mt-1 text-sm text-slate-600">Select the type of coverage that best fits your needs.</p>
+                                </div>
+
+                                <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-3">
+                                    {PLAN_CATEGORIES.map((cat) => (
+                                        <button
+                                            key={cat.id}
+                                            type="button"
+                                            onClick={() => {
+                                                setSelectedCategory(cat.id);
+                                                setView("health");
+                                            }}
+                                            className="rounded-2xl border border-slate-200 bg-slate-50/50 p-6 text-left transition hover:border-blue-200 hover:shadow-sm"
+                                        >
+                                            <div className="text-3xl mb-3">🏥</div>
+                                            <p className="font-bold text-slate-900">{cat.label}</p>
+                                            <p className="mt-1 text-sm text-slate-600">{cat.description}</p>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 3) Health — plan details from catalog */}
+                        {view === "health" && (
+                            <div className="card-premium space-y-8 p-6 sm:p-8">
+                                <div>
+                                    <button type="button" onClick={() => setView("category")} className="text-sm font-semibold text-blue-600">
+                                        ← Back to plan types
+                                    </button>
+                                    <h2 className="mt-4 text-xl font-extrabold text-slate-900">Health — {PLAN_CATEGORIES.find(c => c.id === selectedCategory)?.label || 'Plan'} Selection</h2>
+                                    <p className="mt-1 text-sm text-slate-600">Configure your coverage based on age and health conditions.</p>
                                 </div>
 
                                 <div className="overflow-x-auto rounded-xl border border-slate-200">
@@ -235,7 +421,7 @@ export default function BuyPolicy() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {HEALTH_PLANS.map((hp) => (
+                                            {HEALTH_PLANS.filter(hp => hp.category === selectedCategory).map((hp) => (
                                                 <tr key={hp.id} className="hover:bg-slate-50/80">
                                                     <td className="px-4 py-3 font-semibold text-slate-900">{hp.name}</td>
                                                     <td className="px-4 py-3">{hp.tier}</td>
@@ -377,64 +563,11 @@ export default function BuyPolicy() {
                                 <div className="card-premium p-6 sm:p-8">
                                     {step === 1 && (
                                         <section className="space-y-4">
-                                            <h2 className="text-lg font-extrabold text-slate-900">1. Personal &amp; address</h2>
+                                            <h2 className="text-lg font-extrabold text-slate-900">1. Personal details</h2>
+                                            <p className="text-sm text-slate-600">Information required about the member to be insured.</p>
                                             <div className="grid gap-4 md:grid-cols-2">
                                                 <div className="md:col-span-2">
-                                                    <label className="mb-2 block text-sm font-medium text-slate-700">Street / building</label>
-                                                    <input
-                                                        className="input-premium"
-                                                        value={personal.addressLine1}
-                                                        onChange={(e) => setPersonal({ ...personal, addressLine1: e.target.value })}
-                                                        required
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="mb-2 block text-sm font-medium text-slate-700">State / UT</label>
-                                                    <select
-                                                        className="input-premium"
-                                                        value={personal.state}
-                                                        onChange={(e) => setPersonal({ ...personal, state: e.target.value })}
-                                                        required
-                                                    >
-                                                        <option value="">Select state</option>
-                                                        {INDIAN_STATES.map((st) => (
-                                                            <option key={st} value={st}>
-                                                                {st}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label className="mb-2 block text-sm font-medium text-slate-700">District</label>
-                                                    <input
-                                                        className="input-premium"
-                                                        value={personal.district}
-                                                        onChange={(e) => setPersonal({ ...personal, district: e.target.value })}
-                                                        required
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="mb-2 block text-sm font-medium text-slate-700">City / Town</label>
-                                                    <input
-                                                        className="input-premium"
-                                                        value={personal.city}
-                                                        onChange={(e) => setPersonal({ ...personal, city: e.target.value })}
-                                                        required
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="mb-2 block text-sm font-medium text-slate-700">PIN code</label>
-                                                    <input
-                                                        className="input-premium"
-                                                        inputMode="numeric"
-                                                        maxLength={6}
-                                                        value={personal.pincode}
-                                                        onChange={(e) => setPersonal({ ...personal, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) })}
-                                                        required
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="mb-2 block text-sm font-medium text-slate-700">Full name</label>
+                                                    <label className="mb-2 block text-sm font-medium text-slate-700">Full Name as per your ID Card</label>
                                                     <input
                                                         className="input-premium"
                                                         value={personal.name}
@@ -442,34 +575,250 @@ export default function BuyPolicy() {
                                                         required
                                                     />
                                                 </div>
-                                                <div>
-                                                    <label className="mb-2 block text-sm font-medium text-slate-700">Email</label>
+                                                <div className="md:col-span-2 flex items-center gap-3">
                                                     <input
-                                                        type="email"
+                                                        id="no-last-name"
+                                                        type="checkbox"
+                                                        checked={personal.noLastName}
+                                                        onChange={(e) => setPersonal({ ...personal, noLastName: e.target.checked })}
+                                                        className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                                                    />
+                                                    <label htmlFor="no-last-name" className="text-sm text-slate-700">Don't have a last name</label>
+                                                </div>
+                                                <div>
+                                                    <label className="mb-2 block text-sm font-medium text-slate-700">Marital Status</label>
+                                                    <select
                                                         className="input-premium"
-                                                        value={personal.email}
-                                                        onChange={(e) => setPersonal({ ...personal, email: e.target.value })}
+                                                        value={personal.maritalStatus}
+                                                        onChange={(e) => setPersonal({ ...personal, maritalStatus: e.target.value })}
                                                         required
-                                                    />
+                                                    >
+                                                        <option value="">Select</option>
+                                                        <option value="single">Single</option>
+                                                        <option value="married">Married</option>
+                                                        <option value="widowed">Widowed</option>
+                                                        <option value="divorced">Divorced</option>
+                                                    </select>
                                                 </div>
                                                 <div>
-                                                    <label className="mb-2 block text-sm font-medium text-slate-700">Phone</label>
-                                                    <input
+                                                    <label className="mb-2 block text-sm font-medium text-slate-700">Gender</label>
+                                                    <select
                                                         className="input-premium"
-                                                        value={personal.phone}
-                                                        onChange={(e) => setPersonal({ ...personal, phone: e.target.value })}
+                                                        value={personal.gender}
+                                                        onChange={(e) => setPersonal({ ...personal, gender: e.target.value })}
                                                         required
-                                                    />
+                                                    >
+                                                        <option value="male">Male</option>
+                                                        <option value="female">Female</option>
+                                                        <option value="other">Other</option>
+                                                    </select>
                                                 </div>
-                                                <div>
-                                                    <label className="mb-2 block text-sm font-medium text-slate-700">Date of birth</label>
+                                                <div className="md:col-span-2">
+                                                    <label className="mb-2 block text-sm font-medium text-slate-700">PAN Card</label>
                                                     <input
-                                                        type="date"
                                                         className="input-premium"
-                                                        value={personal.dob}
-                                                        onChange={(e) => setPersonal({ ...personal, dob: e.target.value })}
+                                                        value={personal.panCard}
+                                                        onChange={(e) => setPersonal({ ...personal, panCard: e.target.value.toUpperCase() })}
+                                                        placeholder="ABCDE1234F"
+                                                        disabled={personal.noPan}
+                                                        required={!personal.noPan}
                                                     />
+                                                    <label className="mt-2 flex items-center gap-3 text-sm text-slate-700">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={personal.noPan}
+                                                            onChange={(e) => setPersonal({ ...personal, noPan: e.target.checked, panCard: e.target.checked ? "" : personal.panCard })}
+                                                            className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                                                        />
+                                                        I don't have a PAN card
+                                                    </label>
                                                 </div>
+
+
+
+                                                <div>
+                                                            <label className="mb-2 block text-sm font-medium text-slate-700">Email</label>
+                                                            <input
+                                                                className="input-premium"
+                                                                value={personal.email}
+                                                                onChange={(e) => setPersonal({ ...personal, email: e.target.value })}
+                                                            />
+                                                 </div>
+                                                 
+                                                <div>
+                                                            <label className="mb-2 block text-sm font-medium text-slate-700">Mobile Number</label>
+                                                            <input
+                                                                className="input-premium"
+                                                                value={personal.phone}
+                                                                onChange={(e) => setPersonal({ ...personal, phone: e.target.value })}
+                                                            />
+                                                 </div>
+ <div>
+                                                            <label className="mb-2 block text-sm font-medium text-slate-700">Date of Birth</label>
+                                                            <input
+                                                                className="input-premium"
+                                                                value={personal.dob}
+                                                                onChange={(e) => setPersonal({ ...personal, dob: e.target.value })}
+                                                            />
+                                                 </div>
+                                                
+                                                <div className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                                    <h3 className="text-sm font-semibold text-slate-800">Communication Address</h3>
+                                                    <p className="text-sm text-slate-500">Contact details where we will send digital policy copy.</p>
+                                                    <div className="mt-4 grid gap-4 md:grid-cols-2">
+                                                        <div className="md:col-span-2">
+                                                            <label className="mb-2 block text-sm font-medium text-slate-700">Flat/House number, Apartment</label>
+                                                            <input
+                                                                className="input-premium"
+                                                                value={personal.addressLine1}
+                                                                onChange={(e) => setPersonal({ ...personal, addressLine1: e.target.value })}
+                                                                required
+                                                            />
+                                                        </div>
+                                                        <div className="md:col-span-2">
+                                                            <label className="mb-2 block text-sm font-medium text-slate-700">Colony, Street, Sector</label>
+                                                            <input
+                                                                className="input-premium"
+                                                                value={personal.addressLine2}
+                                                                onChange={(e) => setPersonal({ ...personal, addressLine2: e.target.value })}
+                                                                required
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="mb-2 block text-sm font-medium text-slate-700">Landmark</label>
+                                                            <input
+                                                                className="input-premium"
+                                                                value={personal.landmark}
+                                                                onChange={(e) => setPersonal({ ...personal, landmark: e.target.value })}
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="mb-2 block text-sm font-medium text-slate-700">City</label>
+                                                            <input
+                                                                className="input-premium"
+                                                                value={personal.city}
+                                                                onChange={(e) => setPersonal({ ...personal, city: e.target.value })}
+                                                                required
+                                                            />
+                                                        </div>
+                                                         <div>
+                                                            <label className="mb-2 block text-sm font-medium text-slate-700">District</label>
+                                                            <input
+                                                                className="input-premium"
+                                                                value={personal.district}
+                                                                onChange={(e) => setPersonal({ ...personal, district: e.target.value })}
+                                                                required
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="mb-2 block text-sm font-medium text-slate-700">State</label>
+                                                            <select
+                                                                className="input-premium"
+                                                                value={personal.state}
+                                                                onChange={(e) => setPersonal({ ...personal, state: e.target.value })}
+                                                                required
+                                                            >
+                                                                <option value="">Telangana</option>
+                                                                {INDIAN_STATES.map((st) => (
+                                                                    <option key={st} value={st}>
+                                                                        {st}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+                                                        <div>
+                                                            <label className="mb-2 block text-sm font-medium text-slate-700">Pin Code</label>
+                                                            <input
+                                                                className="input-premium"
+                                                                inputMode="numeric"
+                                                                maxLength={6}
+                                                                value={personal.pincode}
+                                                                onChange={(e) => setPersonal({ ...personal, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) })}
+                                                                required
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="md:col-span-2">
+                                                    <label className="inline-flex items-center gap-3 text-sm font-medium text-slate-700">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={personal.sameAsCommunication}
+                                                            onChange={(e) => setPersonal({ ...personal, sameAsCommunication: e.target.checked })}
+                                                            className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                                                        />
+                                                        Same as Communication Address
+                                                    </label>
+                                                </div>
+                                                {!personal.sameAsCommunication && (
+                                                    <div className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                                        <h3 className="text-sm font-semibold text-slate-800">Permanent Address</h3>
+                                                        <div className="mt-4 grid gap-4 md:grid-cols-2">
+                                                            <div className="md:col-span-2">
+                                                                <label className="mb-2 block text-sm font-medium text-slate-700">Flat/House number, Apartment</label>
+                                                                <input
+                                                                    className="input-premium"
+                                                                    value={personal.permAddressLine1}
+                                                                    onChange={(e) => setPersonal({ ...personal, permAddressLine1: e.target.value })}
+                                                                    required
+                                                                />
+                                                            </div>
+                                                            <div className="md:col-span-2">
+                                                                <label className="mb-2 block text-sm font-medium text-slate-700">Colony, Street, Sector</label>
+                                                                <input
+                                                                    className="input-premium"
+                                                                    value={personal.permAddressLine2}
+                                                                    onChange={(e) => setPersonal({ ...personal, permAddressLine2: e.target.value })}
+                                                                    required
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="mb-2 block text-sm font-medium text-slate-700">Landmark</label>
+                                                                <input
+                                                                    className="input-premium"
+                                                                    value={personal.permLandmark}
+                                                                    onChange={(e) => setPersonal({ ...personal, permLandmark: e.target.value })}
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="mb-2 block text-sm font-medium text-slate-700">City</label>
+                                                                <input
+                                                                    className="input-premium"
+                                                                    value={personal.permCity}
+                                                                    onChange={(e) => setPersonal({ ...personal, permCity: e.target.value })}
+                                                                    required
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="mb-2 block text-sm font-medium text-slate-700">State</label>
+                                                                <select
+                                                                    className="input-premium"
+                                                                    value={personal.permState}
+                                                                    onChange={(e) => setPersonal({ ...personal, permState: e.target.value })}
+                                                                    required
+                                                                >
+                                                                    <option value="">Select state</option>
+                                                                    {INDIAN_STATES.map((st) => (
+                                                                        <option key={st} value={st}>
+                                                                            {st}
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+                                                            <div>
+                                                                <label className="mb-2 block text-sm font-medium text-slate-700">Pin Code</label>
+                                                                <input
+                                                                    className="input-premium"
+                                                                    inputMode="numeric"
+                                                                    maxLength={6}
+                                                                    value={personal.permPincode}
+                                                                    onChange={(e) => setPersonal({ ...personal, permPincode: e.target.value.replace(/\D/g, "").slice(0, 6) })}
+                                                                    required
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         </section>
                                     )}
@@ -477,15 +826,29 @@ export default function BuyPolicy() {
                                     {step === 2 && (
                                         <section className="space-y-4">
                                             <h2 className="text-lg font-extrabold text-slate-900">2. Health information</h2>
+                                            <p className="text-sm text-slate-600">Provide your health metrics, medical history, and any optional riders.</p>
                                             <div className="grid gap-4 sm:grid-cols-2">
                                                 <div>
-                                                    <label className="mb-2 block text-sm font-medium text-slate-700">Height (cm)</label>
+                                                    <label className="mb-2 block text-sm font-medium text-slate-700">Height (feet)</label>
                                                     <input
                                                         type="number"
-                                                        min="50"
+                                                        min="3"
+                                                        max="7"
                                                         className="input-premium"
-                                                        value={health.heightCm}
-                                                        onChange={(e) => setHealth({ ...health, heightCm: e.target.value })}
+                                                        value={health.heightFeet}
+                                                        onChange={(e) => setHealth({ ...health, heightFeet: e.target.value })}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="mb-2 block text-sm font-medium text-slate-700">Height (inches)</label>
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        max="11"
+                                                        className="input-premium"
+                                                        value={health.heightInches}
+                                                        onChange={(e) => setHealth({ ...health, heightInches: e.target.value })}
                                                         required
                                                     />
                                                 </div>
@@ -500,7 +863,7 @@ export default function BuyPolicy() {
                                                         required
                                                     />
                                                 </div>
-                                                <div className="sm:col-span-2">
+                                                <div>
                                                     <label className="mb-2 block text-sm font-medium text-slate-700">Tobacco</label>
                                                     <select
                                                         className="input-premium"
@@ -510,6 +873,16 @@ export default function BuyPolicy() {
                                                         <option value="no">No</option>
                                                         <option value="yes">Yes</option>
                                                     </select>
+                                                </div>
+                                                <div className="sm:col-span-2">
+                                                    <label className="mb-2 block text-sm font-medium text-slate-700">Medical history</label>
+                                                    <textarea
+                                                        className="input-premium"
+                                                        rows={4}
+                                                        value={health.medicalHistory}
+                                                        onChange={(e) => setHealth({ ...health, medicalHistory: e.target.value })}
+                                                        placeholder="Enter any known medical conditions, surgeries or treatments"
+                                                    />
                                                 </div>
                                             </div>
                                             {needsMedicalExam && (
@@ -523,7 +896,89 @@ export default function BuyPolicy() {
 
                                     {step === 3 && (
                                         <section className="space-y-4">
-                                            <h2 className="text-lg font-extrabold text-slate-900">3. Nominee</h2>
+                                            <h2 className="text-lg font-extrabold text-slate-900">3. Riders & proposer</h2>
+                                            <p className="text-sm text-slate-600">Select any optional rider covers, then provide proposer details.</p>
+                                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                                <p className="mb-3 text-sm font-semibold text-slate-800">Optional riders</p>
+                                                <div className="grid gap-3 sm:grid-cols-2">
+                                                    {[
+                                                        { value: 'maternity', label: 'Maternity cover' },
+                                                        { value: 'criticalIllness', label: 'Critical illness' },
+                                                        { value: 'opd', label: 'OPD cover' },
+                                                        { value: 'roomRent', label: 'Room rent waiver' },
+                                                    ].map((option) => (
+                                                        <label key={option.value} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-700">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={health.riders.includes(option.value)}
+                                                                onChange={(e) => {
+                                                                    const next = e.target.checked
+                                                                        ? [...health.riders, option.value]
+                                                                        : health.riders.filter((item) => item !== option.value);
+                                                                    setHealth({ ...health, riders: next });
+                                                                }}
+                                                                className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                                                            />
+                                                            {option.label}
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className="grid gap-4 md:grid-cols-2">
+                                                <div className="md:col-span-2">
+                                                    <label className="mb-2 block text-sm font-medium text-slate-700">Full Name as per your ID Card</label>
+                                                    <input
+                                                        className="input-premium"
+                                                        value={proposer.fullName}
+                                                        onChange={(e) => setProposer({ ...proposer, fullName: e.target.value })}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="md:col-span-2 flex items-center gap-3">
+                                                    <input
+                                                        id="proposer-no-last-name"
+                                                        type="checkbox"
+                                                        checked={proposer.noLastName}
+                                                        onChange={(e) => setProposer({ ...proposer, noLastName: e.target.checked })}
+                                                        className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                                                    />
+                                                    <label htmlFor="proposer-no-last-name" className="text-sm text-slate-700">Don't have a last name</label>
+                                                </div>
+                                                <div>
+                                                    <label className="mb-2 block text-sm font-medium text-slate-700">Marital Status</label>
+                                                    <select
+                                                        className="input-premium"
+                                                        value={proposer.maritalStatus}
+                                                        onChange={(e) => setProposer({ ...proposer, maritalStatus: e.target.value })}
+                                                        required
+                                                    >
+                                                        <option value="">Select</option>
+                                                        <option value="single">Single</option>
+                                                        <option value="married">Married</option>
+                                                        <option value="widowed">Widowed</option>
+                                                        <option value="divorced">Divorced</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="mb-2 block text-sm font-medium text-slate-700">Gender</label>
+                                                    <select
+                                                        className="input-premium"
+                                                        value={proposer.gender}
+                                                        onChange={(e) => setProposer({ ...proposer, gender: e.target.value })}
+                                                        required
+                                                    >
+                                                        <option value="male">Male</option>
+                                                        <option value="female">Female</option>
+                                                        <option value="other">Other</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </section>
+                                    )}
+
+                                    {step === 4 && (
+                                        <section className="space-y-4">
+                                            <h2 className="text-lg font-extrabold text-slate-900">4. Nominee</h2>
                                             <div className="grid gap-4 md:grid-cols-2">
                                                 <div>
                                                     <label className="mb-2 block text-sm font-medium text-slate-700">Nominee name</label>
@@ -556,9 +1011,9 @@ export default function BuyPolicy() {
                                         </section>
                                     )}
 
-                                    {step === 4 && (
+                                    {step === 5 && (
                                         <section className="space-y-5">
-                                            <h2 className="text-lg font-extrabold text-slate-900">4. Review, terms &amp; payment</h2>
+                                            <h2 className="text-lg font-extrabold text-slate-900">5. Review, terms &amp; payment</h2>
                                             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
                                                 <p className="font-mono text-xs text-slate-500">Reference</p>
                                                 <p className="text-lg font-bold text-slate-900">{policyNumber}</p>
@@ -591,6 +1046,40 @@ export default function BuyPolicy() {
                                                 Download schedule (HTML)
                                             </button>
 
+                                            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                                    <div>
+                                                        <p className="text-sm font-semibold text-slate-900">Underwriting preview</p>
+                                                        <p className="text-sm text-slate-600">Run a risk assessment before finalizing your policy.</p>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleQuoteUnderwriting}
+                                                        disabled={isSubmitting}
+                                                        className="btn-secondary rounded-xl px-4 py-2 text-sm font-semibold"
+                                                    >
+                                                        {underwritingQuote ? "Refresh quote" : "Run quote"}
+                                                    </button>
+                                                </div>
+
+                                                {underwritingQuote && (
+                                                    <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                                                        <div className="rounded-2xl border border-slate-200 bg-white p-3">
+                                                            <p className="text-xs uppercase tracking-wide text-slate-500">Decision</p>
+                                                            <p className="mt-2 text-lg font-bold text-slate-900">{underwritingQuote.decision}</p>
+                                                        </div>
+                                                        <div className="rounded-2xl border border-slate-200 bg-white p-3">
+                                                            <p className="text-xs uppercase tracking-wide text-slate-500">Risk score</p>
+                                                            <p className="mt-2 text-lg font-bold text-slate-900">{underwritingQuote.riskScore}</p>
+                                                        </div>
+                                                        <div className="rounded-2xl border border-slate-200 bg-white p-3">
+                                                            <p className="text-xs uppercase tracking-wide text-slate-500">Premium</p>
+                                                            <p className="mt-2 text-lg font-bold text-slate-900">₹{(underwritingQuote.recommendedPremiumPaise / 100).toLocaleString("en-IN")}</p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
                                             <label className="flex cursor-pointer items-start gap-3">
                                                 <input
                                                     type="checkbox"
@@ -614,9 +1103,17 @@ export default function BuyPolicy() {
                                             )}
 
                                             <div className="flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
-                                                <p className="text-sm text-slate-600">
-                                                    Amount due: <span className="font-bold text-slate-900">{selected.premiumLabel}</span>
-                                                </p>
+                                                <div>
+                                                    <p className="text-sm text-slate-600">
+                                                        Amount due: <span className="font-bold text-slate-900">{selected.premiumLabel}</span>
+                                                    </p>
+                                                    {purchaseStatus && (
+                                                        <p className="mt-2 text-sm text-slate-600">{purchaseStatus}</p>
+                                                    )}
+                                                    {purchaseError && (
+                                                        <p className="mt-2 text-sm text-red-600">{purchaseError}</p>
+                                                    )}
+                                                </div>
                                                 <RazorpayButton
                                                     amountPaise={amountPaise}
                                                     receipt={policyNumber}
@@ -625,8 +1122,9 @@ export default function BuyPolicy() {
                                                     customerName={personal.name}
                                                     customerEmail={personal.email}
                                                     customerPhone={personal.phone}
-                                                    disabled={!termsAccepted || (needsMedicalExam && !medicalAck)}
-                                                    onSuccess={paymentSuccess}
+                                                    disabled={!termsAccepted || (needsMedicalExam && !medicalAck) || isSubmitting}
+                                                    onSuccess={handlePaymentSuccess}
+                                                    onFailure={paymentFailure}
                                                 />
                                             </div>
                                         </section>
@@ -645,7 +1143,7 @@ export default function BuyPolicy() {
                                             )}
                                         </div>
                                         <div>
-                                            {step < 4 && (
+                                            {step < 5 && (
                                                 <button type="button" onClick={nextStep} className="btn-primary px-8 py-3">
                                                     Next
                                                 </button>
